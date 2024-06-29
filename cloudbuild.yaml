@@ -2,7 +2,7 @@ steps:
   # Step 1: Check out the repository
   - name: 'gcr.io/cloud-builders/git'
     entrypoint: 'git'
-    args: ['clone', 'https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME.git']
+    args: ['clone', 'https://github.com/suganandan/gradlespringboot.git']
 
   # Step 2: Set up the workspace
   - name: 'gcr.io/cloud-builders/git'
@@ -10,7 +10,7 @@ steps:
     args:
       - '-c'
       - |
-        cd YOUR_REPOSITORY_NAME
+        cd gradlespringboot
         git checkout $BRANCH_NAME
 
   # Step 3: Build the project using Gradle
@@ -28,7 +28,7 @@ steps:
   # Step 6: Deploy the Docker image to Google Cloud Run (or other service)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
-    args: ['run', 'deploy', 'YOUR_SERVICE_NAME', '--image', 'gcr.io/$PROJECT_ID/$YOUR_REPOSITORY_NAME:$YOUR_VERSION', '--platform', 'managed']
+    args: ['run', 'deploy', 'Springbootgradle', '--image', 'gcr.io/$PROJECT_ID/$YOUR_REPOSITORY_NAME:$YOUR_VERSION', '--platform', 'managed']
 
 # Substitutions
 substitutions:

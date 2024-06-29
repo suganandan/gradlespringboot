@@ -1,8 +1,16 @@
 steps:
   # Step 1: Build the project with Gradle
-  - name: 'gradle:8.5-jdk17'
+  - name: 'gradle:7.4-jdk17'
     entrypoint: 'gradle'
     args: ['clean', 'build', '--no-daemon']
+
+  # Step 2: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/gradlespringboot/gradlespringboot:$SHORT_SHA', '.']
+
+  # Step 3: Push Docker image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/gradlespringboot/gradlespringboot:$SHORT_SHA']
 
 # Substitutions
 substitutions:

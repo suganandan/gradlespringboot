@@ -1,21 +1,20 @@
 steps:
-  # Step 1: Install Java 17 and build the application using Gradle
-  - name: 'gcr.io/cloud-builders/gradle'
-    args: ['clean', 'build']
-    env:
-      - 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
-    script: |
-      apt-get update && apt-get install -y openjdk-17-jdk
-      gradle clean build
+  # Step 1: Install Java 17 and set JAVA_HOME
+  - name: 'gcr.io/cloud-builders/bazel'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        apt-get update && apt-get install -y openjdk-17-jdk && \
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 && \
+        java -version && \
+        gradle clean build
 
   # Step 2: Build and push the Docker image using Jib
   - name: 'gcr.io/cloud-builders/gradle'
     args: ['jib', '--image=gcr.io/$PROJECT_ID/my-spring-boot-app']
     env:
       - 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
-    script: |
-      apt-get update && apt-get install -y openjdk-17-jdk
-      gradle jib --image=gcr.io/$PROJECT_ID/my-spring-boot-app
 
   # Step 3: Deploy the image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'

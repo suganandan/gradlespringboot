@@ -3,7 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '3.3.1'
 	id 'io.spring.dependency-management' version '1.1.5'
 	id 'jacoco'
-	//id 'com.google.cloud.tools.jib' version '3.2.0'
+	id 'com.google.cloud.tools.jib' version '3.2.0'
 }
 
 group = 'com.sugan'
@@ -49,6 +49,17 @@ jacocoTestReport {
 		csv.required = false
 		html.required = true
 		html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+	}
+}
+jib {
+	from {
+		image = 'adoptopenjdk:17-jre-hotspot'
+	}
+	to {
+		image = 'gcr.io/${project.findProperty("docker.image.prefix") ?: project.group}/${project.name}'
+	}
+	container {
+		ports = ['8080']
 	}
 }
 

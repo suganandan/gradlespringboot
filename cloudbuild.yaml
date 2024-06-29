@@ -20,12 +20,12 @@ steps:
     entrypoint: 'bash'
     script: |
       apt-get update && apt-get install -y openjdk-17-jdk
-      gradle jib --image=gcr.io/$PROJECT_ID/my-spring-boot-app
+      gradle jib --image=gcr.io/suga-new01/my-spring-boot-app
 
   # Step 3: Deploy the image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
-    args: ['run', 'deploy', 'my-spring-boot-app', '--image', 'gcr.io/$PROJECT_ID/my-spring-boot-app', '--platform', 'managed', '--region', 'us-central1', '--allow-unauthenticated']
+    args: ['run', 'deploy', 'my-spring-boot-app', '--image', 'gcr.io/suga-new01/my-spring-boot-app', '--platform', 'managed', '--region', 'us-central1', '--allow-unauthenticated']
 
 images:
   - 'gcr.io/suga-new01/my-spring-boot-app'

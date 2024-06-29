@@ -1,31 +1,26 @@
 steps:
-  # Step 1: Build the application using Gradle
+  # Step 1: Install Java 17 and build the application using Gradle
   - name: 'gcr.io/cloud-builders/gradle'
     args: ['clean', 'build']
     env:
       - 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
-    entrypoint: 'bash'
     script: |
       apt-get update && apt-get install -y openjdk-17-jdk
       gradle clean build
 
   # Step 2: Build and push the Docker image using Jib
   - name: 'gcr.io/cloud-builders/gradle'
-    args: [
-      'jib',
-      '--image=gcr.io/suga-new01/my-spring-boot-app'
-    ]
+    args: ['jib', '--image=gcr.io/$PROJECT_ID/my-spring-boot-app']
     env:
       - 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
-    entrypoint: 'bash'
     script: |
       apt-get update && apt-get install -y openjdk-17-jdk
-      gradle jib --image=gcr.io/suga-new01/my-spring-boot-app
+      gradle jib --image=gcr.io/$PROJECT_ID/my-spring-boot-app
 
   # Step 3: Deploy the image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
-    args: ['run', 'deploy', 'my-spring-boot-app', '--image', 'gcr.io/suga-new01/my-spring-boot-app', '--platform', 'managed', '--region', 'us-central1', '--allow-unauthenticated']
+    args: ['run', 'deploy', 'my-spring-boot-app', '--image', 'gcr.io/$PROJECT_ID/my-spring-boot-app', '--platform', 'managed', '--region', 'us-central1', '--allow-unauthenticated']
 
 images:
-  - 'gcr.io/suga-new01/my-spring-boot-app'
+  - 'gcr.io/$PROJECT_ID/my-spring-boot-app'

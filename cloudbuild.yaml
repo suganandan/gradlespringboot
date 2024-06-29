@@ -13,43 +13,37 @@ steps:
         cd ${_REPOSITORY_NAME}
         git checkout ${_BRANCH_NAME}
 
-  # Step 3: Ensure the gradlew script has executable permissions
-  - name: 'alpine'
+  # Step 3: Build the project using Gradle with Java 17
+  - name: 'openjdk:17'
     entrypoint: 'sh'
     args:
       - '-c'
       - |
         cd ${_REPOSITORY_NAME}
         chmod +x gradlew
-
-  # Step 4: Build the project using Gradle with Java 17
-  - name: 'openjdk:17'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        cd ${_REPOSITORY_NAME}
         ./gradlew build
 
-  # Step 5: Build the Docker image using Gradle task
+  # Step 4: Build the Docker image using Gradle task
   - name: 'openjdk:17'
     entrypoint: 'sh'
     args:
       - '-c'
       - |
         cd ${_REPOSITORY_NAME}
+        chmod +x gradlew
         ./gradlew buildDockerImage
 
-  # Step 6: Push the Docker image using Gradle task
+  # Step 5: Push the Docker image using Gradle task
   - name: 'openjdk:17'
     entrypoint: 'sh'
     args:
       - '-c'
       - |
         cd ${_REPOSITORY_NAME}
+        chmod +x gradlew
         ./gradlew pushDockerImage
 
-  # Step 7: Deploy the Docker image to Google Cloud Run (or other service)
+  # Step 6: Deploy the Docker image to Google Cloud Run (or other service)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args: ['run', 'deploy', '${_SERVICE_NAME}', '--image', 'gcr.io/$PROJECT_ID/${_REPOSITORY_NAME}:${_VERSION}', '--platform', 'managed']

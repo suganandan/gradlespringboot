@@ -4,28 +4,6 @@ steps:
     entrypoint: 'gradle'
     args: ['clean', 'build', '--no-daemon']
 
-  # Step 2: Run tests and generate coverage reports
-  - name: 'gradle:7.4-jdk17'
-    entrypoint: 'gradle'
-    args: ['test', 'jacocoTestReport', '--no-daemon']
-
-  # Step 3: Build and push Docker image using Jib
-  - name: 'gcr.io/cloud-builders/java'
-    entrypoint: 'mvn'
-    args: ['compile', 'com.google.cloud.tools:jib-maven-plugin:3.2.0:build', '-Dimage=us-central1-docker.pkg.dev/$PROJECT_ID/gitsourcerepo/googlegenai-image:$SHORT_SHA']
-
-  # Step 4: Deploy Docker image to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - '${_SERVICE_NAME}'
-      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/gitsourcerepo/gradlespringboot-image:$SHORT_SHA'
-      - '--platform=managed'
-      - '--region=us-central1'  # Change region as needed
-      - '--allow-unauthenticated'  # Remove this line if authentication is required
-
 # Substitutions
 substitutions:
   _GITHUB_USERNAME: 'suganandan'

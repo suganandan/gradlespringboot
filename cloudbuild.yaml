@@ -1,24 +1,20 @@
 steps:
-  # Step 1: Build the project with Gradle
-  - name: 'gradle:7.4-jdk17'
-    entrypoint: 'gradle'
-    args: ['clean', 'build', '--no-daemon']
+  # Step 1: Build the application using Gradle
+  - name: 'gcr.io/cloud-builders/gradle'
+    args: ['build']
 
-  # Step 2: Build Docker image
+  # Step 2: Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/gradlespringboot/gradlespringboot:$SHORT_SHA', '.']
+    args: ['build', '-t', 'gcr.io/suga-new01/my-spring-boot-app', '.']
 
-  # Step 3: Push Docker image to Container Registry
+  # Step 3: Push the Docker image to Google Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/gradlespringboot/gradlespringboot:$SHORT_SHA']
+    args: ['push', 'gcr.io/suga-new01/my-spring-boot-app']
 
-# Substitutions
-substitutions:
-  _GITHUB_USERNAME: 'suganandan'
-  _REPOSITORY_NAME: 'gradlespringboot'
-  _BRANCH_NAME: 'main' # or whatever branch you want to use
-  _SERVICE_NAME: 'gradlespringboot'
-  _VERSION: '0.0.1-SNAPSHOT' # or dynamic versioning
+  # Step 4: Deploy the image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: ['run', 'deploy', 'my-spring-boot-app', '--image', 'gcr.io/$PROJECT_ID/my-spring-boot-app', '--platform', 'managed', '--region', 'us-central1', '--allow-unauthenticated']
 
-# Timeouts and other options
-timeout: '900s'
+images:
+  - 'gcr.io/$PROJECT_ID/my-spring-boot-app'

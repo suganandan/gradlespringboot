@@ -3,7 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '3.3.1'
 	id 'io.spring.dependency-management' version '1.1.5'
 	id 'jacoco'
-	id 'com.google.cloud.tools.jib' version '3.2.0'
+	//id 'com.google.cloud.tools.jib' version '3.2.0'
 }
 
 group = 'com.sugan'
@@ -52,13 +52,4 @@ jacocoTestReport {
 	}
 }
 
-jib {
-	to {
-		image = 'gcr.io/gradlespringboot/gradlespringboot:0.0.1-SNAPSHOT'
-	}
-}
-
-tasks.named('bootJar') {
-	enabled = false
-}
 

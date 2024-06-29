@@ -1,6 +1,6 @@
 steps:
   # Step 1: Build the project with Gradle
-  - name: 'gradle:7.4-jdk17'
+  - name: 'gradle:8.5-jdk17'
     entrypoint: 'gradle'
     args: ['clean', 'build', '--no-daemon']
 

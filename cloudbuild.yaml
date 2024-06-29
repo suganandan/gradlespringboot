@@ -14,7 +14,7 @@ steps:
         git checkout ${_BRANCH_NAME}
 
   # Step 3: Build the project using Gradle with Java 17
-  - name: 'openjdk:17'
+  - name: 'openjdk:17-jdk-alpine'
     entrypoint: 'sh'
     args:
       - '-c'
@@ -24,7 +24,7 @@ steps:
         ./gradlew build
 
   # Step 4: Build the Docker image using Gradle task
-  - name: 'openjdk:17'
+  - name: 'openjdk:17-jdk-alpine'
     entrypoint: 'sh'
     args:
       - '-c'
@@ -34,7 +34,7 @@ steps:
         ./gradlew buildDockerImage
 
   # Step 5: Push the Docker image using Gradle task
-  - name: 'openjdk:17'
+  - name: 'openjdk:17-jdk-alpine'
     entrypoint: 'sh'
     args:
       - '-c'

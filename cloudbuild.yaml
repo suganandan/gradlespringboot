@@ -1,12 +1,15 @@
 steps:
-  # Step 1: Install Java 17 and build the application using Gradle Wrapper
-  - name: 'gcr.io/cloud-builders/builder'
+  # Step 1: Install Java 17 and Gradle, then build the application using the Gradle wrapper
+  - name: 'ubuntu'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        apt-get update && apt-get install -y openjdk-17-jdk && \
-        update-java-alternatives --set java-1.17.0-openjdk-amd64 && \
+        apt-get update && \
+        apt-get install -y openjdk-17-jdk curl && \
+        curl -s "https://get.sdkman.io" | bash && \
+        source "$HOME/.sdkman/bin/sdkman-init.sh" && \
+        sdk install gradle 7.4.2 && \
         ./gradlew clean build
 
   # Step 2: Build and push the Docker image using Jib

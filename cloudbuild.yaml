@@ -1,0 +1,44 @@
+steps:
+  # Step 1: Check out the repository
+  - name: 'gcr.io/cloud-builders/git'
+    entrypoint: 'git'
+    args: ['clone', 'https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME.git']
+
+  # Step 2: Set up the workspace
+  - name: 'gcr.io/cloud-builders/git'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd YOUR_REPOSITORY_NAME
+        git checkout $BRANCH_NAME
+
+  # Step 3: Build the project using Gradle
+  - name: 'gcr.io/cloud-builders/gradle'
+    args: ['build']
+
+  # Step 4: Build the Docker image using Gradle task
+  - name: 'gcr.io/cloud-builders/gradle'
+    args: ['buildDockerImage']
+
+  # Step 5: Push the Docker image using Gradle task
+  - name: 'gcr.io/cloud-builders/gradle'
+    args: ['pushDockerImage']
+
+  # Step 6: Deploy the Docker image to Google Cloud Run (or other service)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: ['run', 'deploy', 'YOUR_SERVICE_NAME', '--image', 'gcr.io/$PROJECT_ID/$YOUR_REPOSITORY_NAME:$YOUR_VERSION', '--platform', 'managed']
+
+# Substitutions
+substitutions:
+  _BRANCH_NAME: 'main' # or whatever branch you want to use
+  _YOUR_VERSION: '0.0.1-SNAPSHOT' # or dynamic versioning
+
+# Timeouts and other options
+timeout: '900s'
+
+# Artifacts
+artifacts:
+  images:
+    - 'gcr.io/$PROJECT_ID/$YOUR_REPOSITORY_NAME:$YOUR_VERSION'

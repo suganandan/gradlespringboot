@@ -1,0 +1,83 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.7'
+	id 'io.spring.dependency-management' version '1.1.5'
+	id 'jacoco'
+	id 'com.google.cloud.tools.jib' version '3.3.1'
+}
+
+group = 'com.sugan'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+}
+jacoco {
+	toolVersion = "0.8.8"
+}
+jacocoTestReport {
+	dependsOn test // tests are required to run before generating the report
+	reports {
+		xml.required = true
+		csv.required = false
+		html.required = true
+		html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+	}
+}
+
+task buildDockerImage(type: Exec) {
+	def projectName = project.name
+	def artifactName = jar.archiveBaseName.get()
+	def version = project.version
+	def dockerImageName = "gcr.io/${projectName}/${artifactName}:${version}"
+
+	doFirst {
+		println "Building Docker image: ${dockerImageName}"
+	}
+
+	commandLine 'docker', 'build', '-t', dockerImageName, '.'
+}
+
+task pushDockerImage(type: Exec, dependsOn: buildDockerImage) {
+	def projectName = project.name
+	def artifactName = jar.archiveBaseName.get()
+	def version = project.version
+	def dockerImageName = "gcr.io/${projectName}/${artifactName}:${version}"
+
+	doFirst {
+		println "Pushing Docker image: ${dockerImageName}"
+	}
+
+	commandLine 'docker', 'push', dockerImageName
+}
+
+build.dependsOn buildDockerImage
+
+

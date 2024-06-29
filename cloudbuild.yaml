@@ -2,7 +2,7 @@ steps:
   # Step 1: Check out the repository
   - name: 'gcr.io/cloud-builders/git'
     entrypoint: 'git'
-    args: ['clone', 'https://github.com/suganandan/gradlespringboot.git']
+    args: ['clone', 'https://github.com/${_GITHUB_USERNAME}/${_REPOSITORY_NAME}.git']
 
   # Step 2: Set up the workspace
   - name: 'gcr.io/cloud-builders/git'
@@ -10,8 +10,8 @@ steps:
     args:
       - '-c'
       - |
-        cd 'gradlespringboot'
-        git checkout $BRANCH_NAME
+        cd ${_REPOSITORY_NAME}
+        git checkout ${_BRANCH_NAME}
 
   # Step 3: Build the project using Gradle
   - name: 'gcr.io/cloud-builders/gradle'
@@ -28,12 +28,15 @@ steps:
   # Step 6: Deploy the Docker image to Google Cloud Run (or other service)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
-    args: ['run', 'deploy', 'gradlespringboot', '--image', 'gcr.io/$PROJECT_ID/$YOUR_REPOSITORY_NAME:$YOUR_VERSION', '--platform', 'managed']
+    args: ['run', 'deploy', '${_SERVICE_NAME}', '--image', 'gcr.io/$PROJECT_ID/${_REPOSITORY_NAME}:${_VERSION}', '--platform', 'managed']
 
 # Substitutions
 substitutions:
+  _GITHUB_USERNAME: 'suganandan'
+  _REPOSITORY_NAME: 'gradlespringboot'
   _BRANCH_NAME: 'main' # or whatever branch you want to use
-  _YOUR_VERSION: '0.0.1-SNAPSHOT' # or dynamic versioning
+  _SERVICE_NAME: 'gradlespringboot'
+  _VERSION: '0.0.1-SNAPSHOT' # or dynamic versioning
 
 # Timeouts and other options
 timeout: '900s'
@@ -41,4 +44,4 @@ timeout: '900s'
 # Artifacts
 artifacts:
   images:
-    - 'gcr.io/$PROJECT_ID/$YOUR_REPOSITORY_NAME:$YOUR_VERSION'
+    - 'gcr.io/$PROJECT_ID/${_REPOSITORY_NAME}:${_VERSION}'

@@ -1,27 +1,26 @@
 steps:
-  # Step 1: Install Java 17 and Gradle, then build the application using the Gradle wrapper
-  - name: 'ubuntu'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        apt-get update && \
-        apt-get install -y openjdk-17-jdk curl && \
-        curl -s "https://get.sdkman.io" | bash && \
-        source "$HOME/.sdkman/bin/sdkman-init.sh" && \
-        sdk install gradle 7.4.2 && \
-        ./gradlew clean build
-
-  # Step 2: Build and push the Docker image using Jib
+  # Step 1: Building the project with Gradle
   - name: 'gcr.io/cloud-builders/gradle'
-    args: ['./gradlew', 'jib', '--image=gcr.io/$PROJECT_ID/my-spring-boot-app']
-    env:
-      - 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
+    entrypoint: '/gradlew'
+    args: ['clean', 'build']
 
-  # Step 3: Deploy the image to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
-    args: ['run', 'deploy', 'my-spring-boot-app', '--image', 'gcr.io/$PROJECT_ID/my-spring-boot-app', '--platform', 'managed', '--region', 'us-central1', '--allow-unauthenticated']
+  # Step 2: Run tests and generate reports (if needed)
+  - name: 'gcr.io/cloud-builders/gradle'
+    entrypoint: '/gradlew'
+    args: ['test', 'jacocoTestReport']
 
-images:
-  - 'gcr.io/$PROJECT_ID/my-spring-boot-app'
+  # Step 3: Building and pushing the Docker image with Gradle Jib
+  - name: 'gcr.io/cloud-builders/gradle'
+    entrypoint: '/gradlew'
+    args: ['jib', '--image=gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot:$SHORT_SHA']
+
+  # Step 4: Deploying to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'your-cloud-run-service'
+      - '--image=gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot:$SHORT_SHA'
+      - '--platform=managed'
+      - '--region=us-central1'
+      - '--allow-unauthenticated'  # Adjust as per your authentication needs

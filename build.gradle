@@ -56,10 +56,12 @@ jib {
 		image = 'adoptopenjdk:17-jre-hotspot'
 	}
 	to {
-		image = 'gcr.io/${project.findProperty("docker.image.prefix") ?: project.group}/${project.name}'
+		image = 'gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot-image:$version'  // Image destination
+		tags = ['latest', project.version]
 	}
 	container {
-		ports = ['8080']
+		mainClass = 'com.sugan.gradlespringboot.GradlespringbootApplication'  // Replace with your main class
+		ports = ['8080']  // Exposed ports
 	}
 }
 

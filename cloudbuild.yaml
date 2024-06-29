@@ -1,7 +1,14 @@
 steps:
-  # Step 1: Build the application using Gradle
+  # Step 1: Use a custom builder image with Java 17 to build the application using Gradle
   - name: 'gcr.io/cloud-builders/gradle'
     args: ['build']
+    env:
+      - 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
+      - 'GRADLE_OPTS=-Dorg.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64'
+    entrypoint: 'bash'
+    script: |
+      apt-get update && apt-get install -y openjdk-17-jdk
+      gradle build
 
   # Step 2: Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'

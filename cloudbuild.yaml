@@ -13,19 +13,30 @@ steps:
         cd ${_REPOSITORY_NAME}
         git checkout ${_BRANCH_NAME}
 
-  # Step 3: Build the project using Gradle
+  # Step 3: Set up Java 17 environment
+  - name: 'gcr.io/cloud-builders/java'
+    id: 'setup-java'
+    args: ['openjdk-17']
+
+  # Step 4: Build the project using Gradle
   - name: 'gcr.io/cloud-builders/gradle'
     args: ['build']
+    env:
+      - 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
 
-  # Step 4: Build the Docker image using Gradle task
+  # Step 5: Build the Docker image using Gradle task
   - name: 'gcr.io/cloud-builders/gradle'
     args: ['buildDockerImage']
+    env:
+      - 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
 
-  # Step 5: Push the Docker image using Gradle task
+  # Step 6: Push the Docker image using Gradle task
   - name: 'gcr.io/cloud-builders/gradle'
     args: ['pushDockerImage']
+    env:
+      - 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
 
-  # Step 6: Deploy the Docker image to Google Cloud Run (or other service)
+  # Step 7: Deploy the Docker image to Google Cloud Run (or other service)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args: ['run', 'deploy', '${_SERVICE_NAME}', '--image', 'gcr.io/$PROJECT_ID/${_REPOSITORY_NAME}:${_VERSION}', '--platform', 'managed']

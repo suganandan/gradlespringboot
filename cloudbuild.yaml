@@ -1,20 +1,36 @@
 steps:
-  - name: 'gcr.io/cloud-builders/curl'
-    args: ['-LO', 'https://download.java.net/java/GA/jdk17/0d483eb9d1624fdd8c1bbd4b299f3f2e/35/GPL/openjdk-17_linux-x64_bin.tar.gz']
-  - name: 'gcr.io/cloud-builders/tar'
-    args: ['-xvzf', 'openjdk-17_linux-x64_bin.tar.gz']
-  - name: 'gcr.io/cloud-builders/bash'
-    args: ['-c', 'mv jdk-17 /usr/local/']
-  - name: 'gcr.io/cloud-builders/bash'
-    args: ['-c', 'export JAVA_HOME=/usr/local/jdk-17 && export PATH=$JAVA_HOME/bin:$PATH && gradle clean jib']
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args: [
-      'run', 'deploy', 'gradlespringbootsrv',
-      '--image', 'gcr.io/suga-new01/gradlespringboot',
-      '--region', 'us-central1',
-      '--platform', 'managed',
-      '--allow-unauthenticated'
-    ]
-images:
-  - 'gcr.io/suga-new01/gradlespringboot'
+  - name: 'ubuntu'
+    id: 'Install OpenJDK 17'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        apt-get update
+        apt-get install -y openjdk-17-jdk
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        export PATH=$JAVA_HOME/bin:$PATH
+        java -version
 
+  - name: 'gcr.io/cloud-builders/gradle'
+    id: 'Build image with Jib'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        export PATH=$JAVA_HOME/bin:$PATH
+        ./gradlew clean jib
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Deploy to Cloud Run'
+    args:
+      [
+        'run', 'deploy', 'gradlespringbootsrv',
+        '--image', 'gcr.io/$PROJECT_ID/gradlespringboot',
+        '--region', 'us-central1',
+        '--platform', 'managed',
+        '--allow-unauthenticated'
+      ]
+
+images:
+  - 'gcr.io/$PROJECT_ID/YOUR_IMAGE_NAME'

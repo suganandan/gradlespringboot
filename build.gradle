@@ -56,13 +56,19 @@ jib {
 		image = 'adoptopenjdk:17-jre-hotspot'
 	}
 	to {
-		image = 'gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot-image:$version'  // Image destination
+		image = 'gcr.io/suga-new01/gradlespringboot'  // Image destination
 		tags = ['latest', project.version]
 	}
 	container {
 		mainClass = 'com.sugan.gradlespringboot.GradlespringbootApplication'  // Replace with your main class
+		jvmFlags = ['-Xms512m', '-Xmx1024m']
 		ports = ['8080']  // Exposed ports
 	}
+}
+
+
+task cleanBuild(type: Delete) {
+	delete rootProject.buildDir
 }
 
 

@@ -1,26 +1,15 @@
 steps:
-  # Step 1: Building the project with Gradle
   - name: 'gcr.io/cloud-builders/gradle'
-    entrypoint: '/gradlew'
-    args: ['clean', 'build']
-
-  # Step 2: Run tests and generate reports (if needed)
-  - name: 'gcr.io/cloud-builders/gradle'
-    entrypoint: '/gradlew'
-    args: ['test', 'jacocoTestReport']
-
-  # Step 3: Building and pushing the Docker image with Gradle Jib
-  - name: 'gcr.io/cloud-builders/gradle'
-    entrypoint: '/gradlew'
-    args: ['jib', '--image=gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot:$SHORT_SHA']
-
-  # Step 4: Deploying to Cloud Run
+    args: ['clean', 'jib']
+    id: 'Build image with Jib'
   - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - 'your-cloud-run-service'
-      - '--image=gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot:$SHORT_SHA'
-      - '--platform=managed'
-      - '--region=us-central1'
-      - '--allow-unauthenticated'  # Adjust as per your authentication needs
+    args: [
+      'run', 'deploy', 'gradlespringbootsrv',
+      '--image', 'gcr.io/suga-new01/gradlespringboot',
+      '--region', 'us-central1',
+      '--platform', 'managed',
+      '--allow-unauthenticated'
+    ]
+    id: 'Deploy to Cloud Run'
+images:
+  - 'gcr.io/suga-new01/gradlespringboot'

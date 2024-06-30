@@ -51,7 +51,7 @@ jacocoTestReport {
 
 jib {
 	to {
-		image = "gcr.io/$project.projectId/gradleservice:$gitCommit"
+		image = "gcr.io/suga-new01/gradleservice:$gitCommit"
 	}
 }
 

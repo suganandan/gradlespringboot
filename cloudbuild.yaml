@@ -9,7 +9,7 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'gcpservice'
+      - 'gcpservice1'
       - '--image=gcr.io/suga-new01/gradleservice:01'
       - '--platform=managed'
       - '--region=us-central1'

@@ -9,6 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class HelloController {
 @GetMapping("/")
     public ResponseEntity<String> getWelcome(){
-         return ResponseEntity.status(404).body("Welcome to Gradle Spring boot");
+         return ResponseEntity.status(HttpStatus.Series.SUCCESSFUL.value()).body("Welcome to Gradle Spring boot");
     }
 }

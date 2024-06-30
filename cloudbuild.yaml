@@ -1,36 +1,26 @@
 steps:
-  - name: 'ubuntu'
-    id: 'Install OpenJDK 17'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        apt-get update
-        apt-get install -y openjdk-17-jdk
-        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-        export PATH=$JAVA_HOME/bin:$PATH
-        java -version
-
+  # Step 1: Building the project with Gradle
   - name: 'gcr.io/cloud-builders/gradle'
-    id: 'Build image with Jib'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-        export PATH=$JAVA_HOME/bin:$PATH
-        ./gradlew clean jib
+    entrypoint: '/gradlew'
+    args: ['clean', 'build']
 
+  # Step 2: Run tests and generate reports (if needed)
+  - name: 'gcr.io/cloud-builders/gradle'
+    entrypoint: '/gradlew'
+    args: ['test', 'jacocoTestReport']
+
+  # Step 3: Building and pushing the Docker image with Gradle Jib
+  - name: 'gcr.io/cloud-builders/gradle'
+    entrypoint: '/gradlew'
+    args: ['jib', '--image=gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot:$SHORT_SHA']
+
+  # Step 4: Deploying to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'Deploy to Cloud Run'
     args:
-      [
-        'run', 'deploy', 'newservice',
-        '--image', 'gcr.io/suga-new01/gradlespringboot',
-        '--region', 'us-central1',
-        '--platform', 'managed',
-        '--allow-unauthenticated'
-      ]
-
-images:
-  - 'gcr.io/suga-new01/gradlespringboot'
+      - 'run'
+      - 'deploy'
+      - 'your-cloud-run-service'
+      - '--image=gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot:$SHORT_SHA'
+      - '--platform=managed'
+      - '--region=us-central1'
+      - '--allow-unauthenticated'  # Adjust as per your authentication needs

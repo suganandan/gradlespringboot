@@ -48,23 +48,6 @@ jacocoTestReport {
 		html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
 	}
 }
-jib {
-	from {
-		image = 'adoptopenjdk:17-jre-hotspot'
-	}
-	to {
-		image = 'gcr.io/suga-new01/gradlespringboot'  // Image destination
-		tags = ['latest', project.version]
-	}
-	container {
-		jvmFlags = ['-Xms512m', '-Xmx1024m']
-		ports = ['8080']
-	}
-}
 
-
-task cleanBuild(type: Delete) {
-	delete rootProject.buildDir
-}
 
 

@@ -6,7 +6,7 @@ steps:
 
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'push', 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA' ]
+    args: [ 'push', 'gcr.io/suga-new01/gradleservice:01' ]
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -15,8 +15,8 @@ steps:
       - 'deploy'
       - 'gradleservice'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA'
+      - 'gcr.io/suga-new01/gradleservice:01'
       - '--region'
       - 'us-central1'
   images:
-    - 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA'
+    - 'gcr.io/suga-new01/gradleservice:01'

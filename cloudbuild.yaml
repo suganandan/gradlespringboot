@@ -1,26 +1,20 @@
 steps:
-  # Step 1: Building the project with Gradle
-  - name: 'gcr.io/cloud-builders/gradle'
-    entrypoint: 'bash'
-    args: [ '-c', './gradlew clean build' ]
-
-  # Step 2: Run tests and generate reports (if needed)
-  - name: 'gcr.io/cloud-builders/gradle'
-    entrypoint: '/gradlew'
-    args: ['test', 'jacocoTestReport']
-
-  # Step 3: Building and pushing the Docker image with Gradle Jib
-  - name: 'gcr.io/cloud-builders/gradle'
-    entrypoint: '/gradlew'
-    args: ['jib', '--image=gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot:$SHORT_SHA']
-
-  # Step 4: Deploying to Cloud Run
-  - name: 'gcr.io/cloud-builders/gcloud'
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA', '.']
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA']
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
-      - 'your-cloud-run-service'
-      - '--image=gcr.io/$PROJECT_ID/gitsourcerepo/gradlespringboot:$SHORT_SHA'
-      - '--platform=managed'
-      - '--region=us-central1'
-      - '--allow-unauthenticated'  # Adjust as per your authentication needs
+      - 'gradleservice'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+images:
+  - 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA'

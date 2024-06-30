@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HelloController {
 @GetMapping("/")
     public ResponseEntity<String> getWelcome(){
-         return ResponseEntity.status(HttpStatus.Series.SUCCESSFUL.value()).body("Welcome to Gradle Spring boot");
+         return ResponseEntity.status(200).body("Welcome to Gradle Spring boot");
     }
 
     public int addNumbers(int val1, int val2){

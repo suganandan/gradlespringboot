@@ -11,4 +11,8 @@ public class HelloController {
     public ResponseEntity<String> getWelcome(){
          return ResponseEntity.status(HttpStatus.Series.SUCCESSFUL.value()).body("Welcome to Gradle Spring boot");
     }
+
+    public int addNumbers(int val1, int val2){
+    return val1+val2;
+    }
 }

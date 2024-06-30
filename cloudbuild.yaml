@@ -1,20 +1,9 @@
 steps:
-  # Build the container image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA', '.']
-  # Push the container image to Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA']
-  # Deploy container image to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'gradleservice'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA'
-      - '--region'
-      - 'us-central1'
-images:
-  - 'gcr.io/$PROJECT_ID/gradleservice:$COMMIT_SHA'
+  # Step 1: Building the Docker image
+  - name: 'gradle:8.5-jdk17'
+    entrypoint: 'gradle'
+    args: ['clean', 'install']
+
+  # Step 2: Run tests with coverage and generate coverage reports
+  - name: 'gcr.io/cloud-builders/gradle'
+    args: ['test', 'jacoco:report']

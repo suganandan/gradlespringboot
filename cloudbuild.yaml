@@ -2,8 +2,6 @@ steps:
   # Step 1: Building the Docker image
   - name: 'gradle:7.6-jdk17'
     entrypoint: 'gradle'
-    args: ['clean', 'build']
+    args: ['clean', 'build','jib']
 
-  # Step 2: Run tests with coverage and generate coverage reports
-  - name: 'gcr.io/cloud-builders/gradle'
-    args: ['test', 'jacoco:report']
+ 

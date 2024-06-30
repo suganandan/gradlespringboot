@@ -51,7 +51,7 @@ jacocoTestReport {
 
 jib {
 	to {
-		image = "gradleservice:01"
+		image = "gcr.io/suga-new01/gradleservice:01"
 	}
 }
 

@@ -1,6 +1,6 @@
 steps:
   # Step 1: Building the Docker image
-  - name: 'gradle:8.5-jdk17'
+  - name: 'gradle:7.6-jdk17'
     entrypoint: 'gradle'
     args: ['clean', 'install']
 

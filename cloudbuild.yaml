@@ -8,7 +8,7 @@ steps:
   - name: 'gradle:7.6-jdk17'
     entrypoint: 'gradle'
     args: [
-      'test jacocoTestReport sonarqube',
+      'jacocoTestReport ','sonarqube',
       '-Dsonar.projectKey=gradlespringboot',
       '-Dsonar.organization=suganandan',
       '-Dsonar.host.url=https://sonarcloud.io',

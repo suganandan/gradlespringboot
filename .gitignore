@@ -1,15 +1,6 @@
 HELP.md
 .gradle
-build/classes
-build/generated
-build/jacoco
-build/jacocoHtml
-build/jib-cache
-build/reports/tests
-build/resources
-build/test-results
-build/tmp
-
+build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/

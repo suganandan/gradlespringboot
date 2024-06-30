@@ -57,9 +57,8 @@ jib {
 		tags = ['latest', project.version]
 	}
 	container {
-		mainClass = 'com.sugan.gradlespringboot.GradlespringbootApplication'  // Replace with your main class
 		jvmFlags = ['-Xms512m', '-Xmx1024m']
-		ports = ['8080']  // Exposed ports
+		ports = ['8080']
 	}
 }
 

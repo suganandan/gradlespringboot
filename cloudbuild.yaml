@@ -25,12 +25,12 @@ steps:
     id: 'Deploy to Cloud Run'
     args:
       [
-        'run', 'deploy', 'gradlespringbootsrv',
-        '--image', 'gcr.io/$PROJECT_ID/gradlespringboot',
+        'run', 'deploy', 'newservice',
+        '--image', 'gcr.io/suga-new01/gradlespringboot',
         '--region', 'us-central1',
         '--platform', 'managed',
         '--allow-unauthenticated'
       ]
 
 images:
-  - 'gcr.io/$PROJECT_ID/YOUR_IMAGE_NAME'
+  - 'gcr.io/suga-new01/gradlespringboot'

@@ -6,17 +6,18 @@ steps:
 
   # Step 2: SonarCloud analysis
   - name: 'gradle:7.6-jdk17'
-    entrypoint: 'gradle'
+    entrypoint: 'sh'
     args: [
-      'jacocoTestReport ','sonarqube',
-      '-Dsonar.projectKey=gradlespringboot',
-      '-Dsonar.organization=suganandan',
-      '-Dsonar.host.url=https://sonarcloud.io',
-      '-Dsonar.login=d6ce8689c7a01c4d897188425e5f21896f2e33ca'
+      '-c',
+      'gradle test jacocoTestReport sonarqube \
+       -Dsonar.projectKey=gradlespringboot \
+       -Dsonar.organization=suganandan \
+       -Dsonar.host.url=https://sonarcloud.io \
+       -Dsonar.login=$SONARCLOUD_TOKEN'
     ]
     env:
-      - 'SONARCLOUD_TOKEN=d6ce8689c7a01c4d897188425e5f21896f2e33ca'  # Replace with your actual Cloud Build environment variable or secret
-
+      - 'SONARCLOUD_TOKEN=d6ce8689c7a01c4d897188425e5f21896f2e33ca'
+      
   # Step 2: Building and pushing Docker image with Jib
   - name: 'gradle:7.6-jdk17'
     entrypoint: 'gradle'

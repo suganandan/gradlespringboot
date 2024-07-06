@@ -22,6 +22,19 @@ steps:
     entrypoint: 'gradle'
     args: ['clean', 'build', 'jib']
 
+
+
+  # Step to fetch secret from Secret Manager
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Fetch secret value
+        export API_KEY=$(gcloud secrets versions access latest --secret="gradlebuildsecret")
+
+        # Write the secret value to a file (optional, for debug purposes)
+        echo "API_KEY=$API_KEY" >> $BUILD_ENV_FILE
   # Step 4: Deploying to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
@@ -32,3 +45,4 @@ steps:
       - '--platform=managed'
       - '--region=us-central1'
       - '--allow-unauthenticated'  # Adjust as per your authentication needs
+      - '--update-env-vars=API_KEY=$API_KEY'

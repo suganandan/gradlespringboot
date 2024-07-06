@@ -45,10 +45,10 @@ public class HelloController {
             @ApiResponse(responseCode = "500", description = "HTTP Status Internal Server Error", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))})
 
     public ResponseEntity<String> saveEmp(@Valid @RequestBody EmpRequest empRequest) {
-        try {
-            String response = empService.saveEmployee(empRequest);
-            return ResponseEntity.status(200).body("Your Employee Id is :  " + response);
-        }catch(Exception exception){
+        try{
+        String response = empService.saveEmployee(empRequest);
+        return ResponseEntity.status(200).body("Your Employee Id is :  " + response);
+    }catch(Exception exception){
             throw new StandardException(exception.getMessage(), HttpStatus.BAD_REQUEST.toString());
         }
     }

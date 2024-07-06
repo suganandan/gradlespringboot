@@ -25,7 +25,7 @@ steps:
 
 
   # Step to fetch secret from Secret Manager
-  - name: 'gcr.io/cloud-builders/gcloud'
+  - name: 'gcr.io/cloud-builders/gradle'
     entrypoint: 'bash'
     args:
       - '-c'

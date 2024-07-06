@@ -27,8 +27,7 @@ steps:
     entrypoint: 'gradle'
     args: [
       'fetchSecret',
-      '-PsecretName=gradlebuildsecret',
-      '-PbuildEnvFile=$BUILD_ENV_FILE'
+      '-PsecretName=gradlebuildsecret'
     ]
 
   # Step 5: Deploying to Cloud Run

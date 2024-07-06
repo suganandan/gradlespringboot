@@ -31,7 +31,9 @@ dependencies {
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-secretmanager:1.2.8.RELEASE'
 	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-sql-postgresql:1.2.8.RELEASE'
-	implementation 'com.google.cloud.sql:postgres-socket-factory:1.2.0'
+	//implementation 'com.google.cloud.sql:postgres-socket-factory:1.2.0'
+	//implementation group: 'com.google.cloud.sql', name: 'jdbc-socket-factory-core', version: '1.18.0'
+
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -22,13 +22,7 @@ steps:
     entrypoint: 'gradle'
     args: ['clean', 'build', 'jib']
 
-  # Step 4: Fetching secret from Secret Manager using Gradle
-  - name: 'gradle:7.6-jdk17'
-    entrypoint: 'gradle'
-    args: [
-      'fetchSecret',
-      '-PsecretName=gradlebuildsecret'
-    ]
+
 
   # Step 5: Deploying to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -40,4 +34,3 @@ steps:
       - '--platform=managed'
       - '--region=us-central1'
       - '--allow-unauthenticated'  # Adjust as per your authentication needs
-      - '--update-env-vars=API_KEY=$API_KEY'

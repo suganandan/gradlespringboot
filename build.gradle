@@ -28,7 +28,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.postgresql:postgresql'
+	runtimeOnly 'org.postgresql:postgresql'
+	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-secretmanager:1.2.8.RELEASE'
+	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-sql-postgresql:1.2.8.RELEASE'
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -38,6 +40,7 @@ dependencies {
 	implementation 'org.mapstruct:mapstruct:1.5.3.Final'
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
 }
+
 
 tasks.named('test') {
 	useJUnitPlatform()

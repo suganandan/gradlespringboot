@@ -22,8 +22,6 @@ steps:
     entrypoint: 'gradle'
     args: ['clean', 'build', 'jib']
 
-
-
   # Step 5: Deploying to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:

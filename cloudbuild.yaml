@@ -22,19 +22,15 @@ steps:
     entrypoint: 'gradle'
     args: ['clean', 'build', 'jib']
 
-
-
-  # Step to fetch secret from Secret Manager
-  - name: 'gcr.io/cloud-builders/gradle'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        # Fetch secret value
-        export API_KEY=$(gcloud secrets versions access latest --secret="gradlebuildsecret")
-
-        # Write the secret value to a file (optional, for debug purposes)
-        echo "API_KEY=$API_KEY" >> $BUILD_ENV_FILE
+  # Step 4: Fetching secret from Secret Manager using Gradle
+  - name: 'gradle:7.6-jdk17'
+    entrypoint: 'gradle'
+    args: [
+      'fetchSecret',
+      '-PsecretName=gradlebuildsecret',
+      '-PbuildEnvFile=$BUILD_ENV_FILE'
+    ]
+    
   # Step 4: Deploying to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:

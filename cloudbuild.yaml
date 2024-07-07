@@ -3,7 +3,7 @@ steps:
   - name: 'gcr.io/cloudsql-docker/gce-proxy:1.28.0'
     entrypoint: '/cloud_sql_proxy'
     args: ['-instances=suga-new01:us-central1:postgresinstance=tcp:5432']
-    waitFor: ['-']
+    #waitFor: ['-']
 
   # Step 1: Building the Docker image
   - name: 'gradle:7.6-jdk17'

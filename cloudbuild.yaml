@@ -1,9 +1,6 @@
 steps:
+
   
-  # Step 1: Building the Docker image
-  - name: 'gradle:7.6-jdk17'
-    entrypoint: 'gradle'
-    args: ['test', 'jacocoTestReport']
 
   # Step 2: SonarCloud analysis
   - name: 'gradle:7.6-jdk17'

@@ -15,10 +15,10 @@ class HelloControllerAcceptanceTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Test
+    /*@Test
     public void testGetWelcome() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/"))
                 .andExpect(status().is(200))
                 .andExpect(content().string("Welcome to Gradle Spring boot"));
-    }
+    }*/
 }

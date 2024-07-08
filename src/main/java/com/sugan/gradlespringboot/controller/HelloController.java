@@ -47,7 +47,7 @@ public class HelloController {
     public ResponseEntity<String> saveEmp(@Valid @RequestBody EmpRequest empRequest) {
         try{
         String response = empService.saveEmployee(empRequest);
-        return ResponseEntity.status(200).body("Your Employee Id is :  " + response);
+        return ResponseEntity.status(200).body("Your Employee Id is  created:  " + response);
     }catch(Exception exception){
             throw new StandardException(exception.getMessage(), HttpStatus.BAD_REQUEST.toString());
         }

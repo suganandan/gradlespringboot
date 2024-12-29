@@ -2,9 +2,7 @@ package com.sugan.gradlespringboot.controller;
 
 import com.sugan.gradlespringboot.api.EmpRequest;
 import com.sugan.gradlespringboot.dto.ErrorResponseDto;
-import com.sugan.gradlespringboot.entity.Emptbl;
 import com.sugan.gradlespringboot.exception.StandardException;
-import com.sugan.gradlespringboot.mapper.EmpMapper;
 import com.sugan.gradlespringboot.service.EmpService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -45,11 +43,11 @@ public class HelloController {
             @ApiResponse(responseCode = "500", description = "HTTP Status Internal Server Error", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))})
 
     public ResponseEntity<String> saveEmp(@Valid @RequestBody EmpRequest empRequest) {
-        try{
-        String response = empService.saveEmployee(empRequest);
-        return ResponseEntity.status(200).body("Your Employee Id is  created:  " + response);
-    }catch(Exception exception){
-            throw new StandardException(exception.getMessage(), HttpStatus.BAD_REQUEST.toString());
+        try {
+            String response = empService.saveEmployee(empRequest);
+            return ResponseEntity.status(200).body("Your Employee Id is  created:  " + response);
+        } catch (Exception exception) {
+            throw new StandardException(exception.getMessage(),HttpStatus.BAD_REQUEST.toString());
         }
     }
 }

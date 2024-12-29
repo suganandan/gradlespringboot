@@ -1,17 +1,19 @@
 package com.sugan.gradlespringboot.exception;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 
+import java.io.Serial;
+
+@Setter
 @Getter
-@NoArgsConstructor
 @AllArgsConstructor
 public class StandardException extends RuntimeException {
+    @Serial
     private static final long serialVersionUID = 1L;
-
-    private String message;
+   
+    private final String message;
     private String errorCode;
+
 
 }
 

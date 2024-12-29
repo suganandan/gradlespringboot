@@ -9,7 +9,7 @@ import org.mapstruct.factory.Mappers;
 public interface EmpMapper {
     EmpMapper INSTANCE = Mappers.getMapper(EmpMapper.class);
     EmpRequest empToEmpDTO(Emptbl emptbl);
-    @Mapping(target = "empid", ignore = true)
+   //@Mapping(target = "empid", ignore = true)
     Emptbl EmpDTOToEmp(EmpRequest empRequest);
 
 }

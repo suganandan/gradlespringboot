@@ -7,6 +7,7 @@ import com.sugan.gradlespringboot.repository.EmpRepository;
 import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EmpService {
@@ -18,10 +19,11 @@ public class EmpService {
         this.empRepository = empRepository;
     }
 
+
     public String saveEmployee(EmpRequest empRequest) {
         try {
             Emptbl empVal = EmpMapper.INSTANCE.EmpDTOToEmp(empRequest);
-            Emptbl updateVal= empRepository.save(empVal);
+            Emptbl updateVal = empRepository.save(empVal);
             return String.valueOf(updateVal.getEmpid());
         } catch (ServiceException exception) {
             throw new ServiceException(exception.getMessage());

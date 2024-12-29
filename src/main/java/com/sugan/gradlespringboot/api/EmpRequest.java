@@ -23,4 +23,5 @@ public class EmpRequest {
     private String designation;
     @NotNull(message = "age cannot be null")
     private Long age;
+    private Long empid;
 }

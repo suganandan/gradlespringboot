@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: gradlespringboot
+
+  cache:
+    type: caffeine
+
+  caffeine:
+    spec: maximumSize=10000, expireAfterWrite=10m
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/demo
+    username: root
+    password: admin123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    # properties.hibernate.format_sql: true
+
+resilience4j:
+  retry:
+    instances:
+      fetchEmployeeRetry:
+        maxAttempts: 3
+        waitDuration: 2s
+logging:
+  level:
+    root: INFO
+    com.sugan.gradlespringboot.service: DEBUG

@@ -9,19 +9,27 @@ spring:
     spec: maximumSize=10000, expireAfterWrite=10m
 
   datasource:
-    url: jdbc:mysql://localhost:3306/demo
-    username: root
-    password: admin123
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:h2:mem:testdb  # H2 in-memory database
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:  # H2 default (no password)
+    hikari:
+      maximum-pool-size: 10  # Set connection pool size for performance
+    generate-unique-name: false  # Keeps database name constant for reuse
 
   jpa:
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+    database-platform: org.hibernate.dialect.H2Dialect  # H2 dialect
     hibernate:
-      ddl-auto: update
-    show-sql: true
-    # properties.hibernate.format_sql: true
+      ddl-auto: update  # Auto updates schema
+    show-sql: true  # Show executed SQL queries
+    defer-datasource-initialization: true  # Ensures schema.sql/data.sql runs
+
+  h2:
+    console:
+      enabled: true  # Enables H2 web console
+      path: /h2-console  # Access console at http://localhost:8080/h2-console
+      settings:
+        web-allow-others: false  # Restricts access to local machine
 
 resilience4j:
   retry:
@@ -29,6 +37,7 @@ resilience4j:
       fetchEmployeeRetry:
         maxAttempts: 3
         waitDuration: 2s
+
 logging:
   level:
     root: INFO

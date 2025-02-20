@@ -12,7 +12,6 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
-
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
@@ -28,7 +27,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	//implementation 'org.postgresql:postgresql:42.7.2'
 	//runtimeOnly 'com.mysql:mysql-connector-j'
 	runtimeOnly 'com.h2database:h2'
 	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-secretmanager:1.2.8.RELEASE'
@@ -49,14 +47,15 @@ dependencies {
 	implementation 'io.github.resilience4j:resilience4j-spring-boot2:1.7.1'  // Retry & Fallback
 }
 
-
 tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy jacocoTestReport
 }
+
 jacoco {
 	toolVersion = "0.8.8"
 }
+
 jacocoTestReport {
 	dependsOn test // tests are required to run before generating the report
 	reports {
@@ -70,20 +69,18 @@ jacocoTestReport {
 jib {
 	to {
 		image = "gcr.io/suga-new01/gradleservice:01"
+		format = "Docker"  // Force Docker format instead of OCI
 	}
 }
+
 ext {
 	set('springCloudGcpVersion', "5.4.3")
 	set('springCloudVersion', "2023.0.2")
 }
+
 dependencyManagement {
 	imports {
 		mavenBom "com.google.cloud:spring-cloud-gcp-dependencies:${springCloudGcpVersion}"
 		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
 	}
 }
-
-
-
-
-

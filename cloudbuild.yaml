@@ -11,7 +11,7 @@ steps:
   #  args: ['test', 'jacocoTestReport']
 
   # Step 2: SonarCloud analysis
-  - name: 'gradle:7.6-jdk17'
+  - name: 'gradle:7.6.2-jdk17'
     entrypoint: 'gradle'
     args: [
       'sonarqube',

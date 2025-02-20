@@ -1,32 +1,40 @@
 steps:
-  # Step 1: Build the Docker image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/gradlespringboot:01', '.']
-    images: ['gcr.io/$PROJECT_ID/gradlespringboot:01']
+  # Step 0: Start Cloud SQL Proxy
+  #- name: 'gcr.io/cloudsql-docker/gce-proxy:1.28.0'
+  #  entrypoint: '/cloud_sql_proxy'
+  #  args: ['-instances=suga-new01:us-central1:postgresinstance=tcp:5432']
+  #  #waitFor: ['-']
 
-  # Step 2: SonarCloud analysis (using the built image)
-  - name: 'gcr.io/$PROJECT_ID/gradleservice:01'
-    entrypoint: 'gradle'  # Or the appropriate entrypoint for your SonarCloud setup
+  # Step 1: Building the Docker image
+  #- name: 'gradle:7.6-jdk17'
+  #  entrypoint: 'gradle'
+  #  args: ['test', 'jacocoTestReport']
+
+  # Step 2: SonarCloud analysis
+  - name: 'gradle:7.6-jdk17'
+    entrypoint: 'gradle'
     args: [
       'sonarqube',
-      '-Dsonar.projectKey=gradlespringboot',  # Update if needed
-      '-Dsonar.organization=suganandan',     # Update if needed
+      '-Dsonar.projectKey=gradlespringboot',
+      '-Dsonar.organization=suganandan',
       '-Dsonar.host.url=https://sonarcloud.io',
-      '-Dsonar.login=$$SONARCLOUD_TOKEN'
+      '-Dsonar.login=d6ce8689c7a01c4d897188425e5f21896f2e33ca'
     ]
-    secretEnv: ['SONARCLOUD_TOKEN']  # Use a Cloud Build secret (recommended)
+    env:
+      - 'SONARCLOUD_TOKEN=d6ce8689c7a01c4d897188425e5f21896f2e33ca'  # Replace with your actual Cloud Build environment variable or secret
 
-  # Step 3: Deploy to Cloud Run
+  # Step 3: Building and pushing Docker image with Jib
+  - name: 'gradle:7.6-jdk17'
+    entrypoint: 'gradle'
+    args: ['clean', 'build', 'jib']
+
+  # Step 5: Deploying to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
       - 'deploy'
-      - 'gcpservice1'  # Your service name
-      - '--image=gcr.io/$PROJECT_ID/gradlespringboot:01'
+      - 'gcpservice1'
+      - '--image=gcr.io/suga-new01/gradleservice:01'
       - '--platform=managed'
       - '--region=us-central1'
-      - '--allow-unauthenticated'  # Adjust authentication as needed
-
-secrets:
-  - name: 'SONARCLOUD_TOKEN'
-    value: 'd6ce8689c7a01c4d897188425e5f21896f2e33ca' # Replace with your encoded token
+      - '--allow-unauthenticated'  # Adjust as per your authentication needs

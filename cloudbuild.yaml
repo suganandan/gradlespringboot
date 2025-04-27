@@ -28,12 +28,14 @@ steps:
     args: ["clean", "build", "jib"]
 
   # Step 5: Container Image Vulnerability Scanning
-  - name: "gcr.io/cloud-builders/gcloud"
+  - name: 'gcr.io/cloud-builders/gcloud'
     args:
-      - "container"
-      - "images"
-      - "scan"
-      - "gcr.io/suga-new01/gradleservice:01"
+      - 'artifacts'
+      - 'docker'
+      - 'images'
+      - 'scan'
+      - 'gcr.io/suga-new01/gradleservice:01'
+  
 
   # Step 6: Binary Authorization (Optional - extra security)
   - name: 'gcr.io/cloud-builders/gcloud'

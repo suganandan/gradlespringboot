@@ -1,5 +1,7 @@
 steps:
-  # Step 0: SonarCloud analysis
+
+
+  # Step 2: SonarCloud analysis
   - name: 'gradle:7.6-jdk17'
     entrypoint: 'gradle'
     args: [
@@ -12,157 +14,18 @@ steps:
     env:
       - 'SONARCLOUD_TOKEN=d6ce8689c7a01c4d897188425e5f21896f2e33ca'  # Replace with your actual Cloud Build environment variable or secret
 
-  # Step 1: Build the Docker image (tagged with a unique identifier)
+  # Step 3: Building and pushing Docker image with Jib
   - name: 'gradle:7.6-jdk17'
     entrypoint: 'gradle'
     args: ['clean', 'build', 'jib']
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_REGION=us-central1'
-      - '_PROJECT_ID=suga-new01'
 
-  # Step 2: Push the Docker image with the unique tag
-  - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'docker'
-    args: ['push', 'gcr.io/suga-new01/${_SERVICE_NAME}:${COMMIT_SHA}']
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_PROJECT_ID=suga-new01'
-
-  # Step 3: Get the current active service URL (if it exists)
+  # Step 5: Deploying to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
-    id: get-active-url
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        ACTIVE_URL=$(gcloud run services describe ${_SERVICE_NAME} --platform=managed --region=${_REGION} --format='value(status.url)' 2>/dev/null)
-        if [ -n "$ACTIVE_URL" ]; then
-          echo "ACTIVE_URL=$ACTIVE_URL" > /workspace/active_url.env
-        else
-          echo "No active URL found. This might be the first deployment."
-          echo "ACTIVE_URL=" > /workspace/active_url.env
-        fi
-    volumes:
-      - name: 'workspace'
-        path: '/workspace'
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_REGION=us-central1'
-
-  # Step 4: Deploy the new revision (green)
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: deploy-green
     args:
       - 'run'
       - 'deploy'
-      - '${_SERVICE_NAME}-green' # Deploying to a new service with "-green" suffix
-      - '--image=gcr.io/suga-new01/${_SERVICE_NAME}:${COMMIT_SHA}'
+      - 'gcpservice1'
+      - '--image=gcr.io/suga-new01/gradleservice:01'
       - '--platform=managed'
-      - '--region=${_REGION}'
-      - '--allow-unauthenticated' # Adjust as per your authentication needs
-    waitFor: ['-'] # Don't wait for the previous step
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_REGION=us-central1'
-      - '_PROJECT_ID=suga-new01'
-
-  # Step 5: Wait for the new revision to become ready
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: wait-for-green
-    args:
-      - 'run'
-      - 'services'
-      - 'wait'
-      - '${_SERVICE_NAME}-green'
-      - '--platform=managed'
-      - '--region=${_REGION}'
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_REGION=us-central1'
-
-# Step 6: Update traffic to shift a small percentage to the new revision (optional canary testing)
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: shift-traffic-partial
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        source /workspace/active_url.env
-        if [ -n "$ACTIVE_URL" ]; then
-          gcloud run services update-traffic ${_SERVICE_NAME} --platform=managed --region=${_REGION} \
-            --to-latest=0 --to-revisions="${_SERVICE_NAME}-green"=20
-          echo "Shifted 20% traffic to the new green revision."
-        else
-          echo "This is the initial deployment. Skipping partial traffic shift."
-        fi
-    volumes:
-      - name: 'workspace'
-        path: '/workspace'
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_REGION=us-central1'
-
-  # Step 7: Wait for manual approval (you'll need to trigger the next step manually)
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: manual-approval
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - 'echo "Waiting for manual approval to promote the green revision..." && sleep 3600' # Adjust sleep duration as needed
-    waitFor: ['shift-traffic-partial']
-    timeout: 3600s # Set a reasonable timeout for manual approval
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_REGION=us-central1'
-
-  # Step 8: Shift all traffic to the new revision (blue becomes the old green)
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: shift-traffic-full
-    args:
-      - 'run'
-      - 'services'
-      - 'update-traffic'
-      - '${_SERVICE_NAME}'
-      - '--platform=managed'
-      - '--region=${_REGION}'
-      - '--to-latest=100'
-    waitFor: ['manual-approval']
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_REGION=us-central1'
-
-  # Step 9: Delete the old "blue" service (which was the previous green)
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: delete-old-blue
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        OLD_GREEN=$(gcloud run services list --platform=managed --region=${_REGION} --filter="name:${_SERVICE_NAME}-green" --format='value(name)')
-        if [ -n "$OLD_GREEN" ]; then
-          echo "Deleting old green service: $OLD_GREEN"
-          gcloud run services delete "$OLD_GREEN" --platform=managed --region=${_REGION} --quiet
-        else
-          echo "No old green service found to delete."
-        fi
-    waitFor: ['shift-traffic-full']
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_REGION=us-central1'
-
-  # Step 10: Rename the current "green" service to the main service name "blue"
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: rename-green-to-blue
-    args:
-      - 'run'
-      - 'services'
-      - 'update'
-      - '${_SERVICE_NAME}'
-      - '--platform=managed'
-      - '--region=${_REGION}'
-      - '--new-name=${_SERVICE_NAME}' # Effectively, the current green becomes the new blue
-    waitFor: ['delete-old-blue']
-    env:
-      - '_SERVICE_NAME=gcpservice1'
-      - '_REGION=us-central1'
+      - '--region=us-central1'
+      - '--allow-unauthenticated'  # Adjust as per your authentication needs

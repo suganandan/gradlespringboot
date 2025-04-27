@@ -81,7 +81,7 @@ steps:
       - '_SERVICE_NAME=gcpservice1'
       - '_REGION=us-central1'
 
-  # Step 6: Update traffic to shift a small percentage to the new revision (optional canary testing)
+# Step 6: Update traffic to shift a small percentage to the new revision (optional canary testing)
   - name: 'gcr.io/cloud-builders/gcloud'
     id: shift-traffic-partial
     entrypoint: 'bash'

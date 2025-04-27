@@ -1,6 +1,3 @@
-substitutions:
-  COMMIT_SHA: '$$COMMIT_SHA' # Use double dollar signs to escape and treat as a literal for substitution
-
 steps:
   # Step 0: SonarCloud analysis
   - name: 'gradle:7.6-jdk17'
@@ -60,7 +57,7 @@ steps:
       - 'run'
       - 'deploy'
       - '${_SERVICE_NAME}-green' # Deploying to a new service with "-green" suffix
-      - '--image=gcr.io/suga-new01/${_SERVICE_NAME}:${COMMIT_SHA}']
+      - '--image=gcr.io/suga-new01/${_SERVICE_NAME}:${COMMIT_SHA}'
       - '--platform=managed'
       - '--region=${_REGION}'
       - '--allow-unauthenticated' # Adjust as per your authentication needs

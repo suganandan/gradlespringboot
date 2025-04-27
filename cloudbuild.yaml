@@ -29,6 +29,7 @@ steps:
     env:
       - '_SERVICE_NAME=gcpservice1'
       - '_PROJECT_ID=suga-new01'
+      - 'IMAGE_TAG=$SHORT_SHA' # Ensure IMAGE_TAG is available
 
   # Step 3: Get the current active service URL (if it exists)
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -67,6 +68,7 @@ steps:
       - '_SERVICE_NAME=gcpservice1'
       - '_REGION=us-central1'
       - '_PROJECT_ID=suga-new01'
+      - 'IMAGE_TAG=$SHORT_SHA' # Ensure IMAGE_TAG is available
 
   # Step 5: Wait for the new revision to become ready
   - name: 'gcr.io/cloud-builders/gcloud'

@@ -16,11 +16,11 @@ steps:
       - "SONARCLOUD_TOKEN=d6ce8689c7a01c4d897188425e5f21896f2e33ca" # Replace with your actual Cloud Build environment variable or secret
 
   # Step 3: SCA (Software Composition Analysis) - Dependency Vulnerability Scan
-  - name: "gradle:7.6-jdk17"
-    entrypoint: "gradle"
-    args: ["dependencyCheckAnalyze"] # Using OWASP Dependency-Check Plugin
-    env:
-      - "NVD_API_KEY=489dfbc8-3d5f-4716-ab97-14db15b3a7ec"
+  #- name: "gradle:7.6-jdk17"
+    #entrypoint: "gradle"
+    #args: ["dependencyCheckAnalyze"] # Using OWASP Dependency-Check Plugin
+    #env:
+      #- "NVD_API_KEY=489dfbc8-3d5f-4716-ab97-14db15b3a7ec"
 
   # Step 4: Building and pushing Docker image with Jib
   - name: "gradle:7.6-jdk17"

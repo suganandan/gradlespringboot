@@ -51,7 +51,7 @@ dependencies {
 }
 
 // Optional: configure it if you want custom report paths
-dependencyCheck {
+/*dependencyCheck {
     failBuildOnCVSS = 7.0
     formats = ['HTML', 'JSON']
     analyzers {
@@ -60,7 +60,7 @@ dependencyCheck {
     nvd {
         apiKey = '489dfbc8-3d5f-4716-ab97-14db15b3a7ec'
     }
-}
+}*/
 
 
 

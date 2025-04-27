@@ -17,7 +17,7 @@ steps:
     entrypoint: 'gradle'
     args: ['clean', 'build', 'jib']
     env:
-      - 'IMAGE_TAG=$SHORT_SHA' # Using Cloud Build's short commit SHA for unique tagging
+      - 'IMAGE_TAG=$COMMIT_SHA' # Using the full commit SHA for unique tagging
       - '_SERVICE_NAME=gcpservice1'
       - '_REGION=us-central1'
       - '_PROJECT_ID=suga-new01'
@@ -25,7 +25,7 @@ steps:
   # Step 2: Push the Docker image with the unique tag
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'docker'
-    args: ['push', 'gcr.io/suga-new01/${_SERVICE_NAME}:$SHORT_SHA']
+    args: ['push', 'gcr.io/suga-new01/${_SERVICE_NAME}:${IMAGE_TAG}']
     env:
       - '_SERVICE_NAME=gcpservice1'
       - '_PROJECT_ID=suga-new01'
@@ -58,7 +58,7 @@ steps:
       - 'run'
       - 'deploy'
       - '${_SERVICE_NAME}-green' # Deploying to a new service with "-green" suffix
-      - '--image=gcr.io/suga-new01/${_SERVICE_NAME}:$SHORT_SHA'
+      - '--image=gcr.io/suga-new01/${_SERVICE_NAME}:${IMAGE_TAG}'
       - '--platform=managed'
       - '--region=${_REGION}'
       - '--allow-unauthenticated' # Adjust as per your authentication needs
@@ -165,5 +165,7 @@ steps:
       - '--new-name=${_SERVICE_NAME}' # Effectively, the current green becomes the new blue
     waitFor: ['delete-old-blue']
     env:
+      - 'IMAGE_TAG=$COMMIT_SHA' # Using the full commit SHA for unique tagging
       - '_SERVICE_NAME=gcpservice1'
       - '_REGION=us-central1'
+      - '_PROJECT_ID=suga-new01'

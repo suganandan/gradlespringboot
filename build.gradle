@@ -54,11 +54,14 @@ dependencies {
 dependencyCheck {
     failBuildOnCVSS = 7.0
     formats = ['HTML', 'JSON']
-    // suppressionFile = 'dependency-check-suppression.xml' // Commented out if no file
     analyzers {
-        assemblyEnabled = false  // <-- Disable .NET analysis
+        assemblyEnabled = false
+    }
+    nvd {
+        apiKey = '489dfbc8-3d5f-4716-ab97-14db15b3a7ec'
     }
 }
+
 
 
 

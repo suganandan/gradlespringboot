@@ -19,6 +19,10 @@ steps:
     entrypoint: 'gradle'
     args: ['clean', 'build', 'jib']
 
+  # Step 4: Print the Commit SHA
+  - name: 'ubuntu'
+    script: 'echo "Commit SHA: $COMMIT_SHA"'
+    
   # Step 5: Deploying to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:

@@ -1,3 +1,5 @@
+envs:
+  - 'PROJECT_ID=suga-new01'
 steps:
 
 

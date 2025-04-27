@@ -58,7 +58,7 @@ steps:
       - 'run'
       - 'deploy'
       - '${_SERVICE_NAME}-green' # Deploying to a new service with "-green" suffix
-      - '--image=gcr.io/suga-new01/${_SERVICE_NAME}:${IMAGE_TAG}'
+      - '--image=gcr.io/suga-new01/${_SERVICE_NAME}:$SHORT_SHA'
       - '--platform=managed'
       - '--region=${_REGION}'
       - '--allow-unauthenticated' # Adjust as per your authentication needs

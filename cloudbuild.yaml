@@ -1,40 +1,83 @@
 steps:
-  # Step 0: Start Cloud SQL Proxy
-  #- name: 'gcr.io/cloudsql-docker/gce-proxy:1.28.0'
-  #  entrypoint: '/cloud_sql_proxy'
-  #  args: ['-instances=suga-new01:us-central1:postgresinstance=tcp:5432']
-  #  #waitFor: ['-']
-
-  # Step 1: Building the Docker image
-  #- name: 'gradle:7.6-jdk17'
-  #  entrypoint: 'gradle'
-  #  args: ['test', 'jacocoTestReport']
+  # Step 1: Source Checkout
 
   # Step 2: SonarCloud analysis
-  - name: 'gradle:7.6-jdk17'
-    entrypoint: 'gradle'
-    args: [
-      'sonarqube',
-      '-Dsonar.projectKey=gradlespringboot',
-      '-Dsonar.organization=suganandan',
-      '-Dsonar.host.url=https://sonarcloud.io',
-      '-Dsonar.login=d6ce8689c7a01c4d897188425e5f21896f2e33ca'
-    ]
+  - name: "gradle:7.6-jdk17"
+    entrypoint: "gradle"
+    args:
+      [
+        "sonarqube",
+        "-Dsonar.projectKey=gradlespringboot",
+        "-Dsonar.organization=suganandan",
+        "-Dsonar.host.url=https://sonarcloud.io",
+        "-Dsonar.login=d6ce8689c7a01c4d897188425e5f21896f2e33ca",
+      ]
     env:
-      - 'SONARCLOUD_TOKEN=d6ce8689c7a01c4d897188425e5f21896f2e33ca'  # Replace with your actual Cloud Build environment variable or secret
+      - "SONARCLOUD_TOKEN=d6ce8689c7a01c4d897188425e5f21896f2e33ca" # Replace with your actual Cloud Build environment variable or secret
 
-  # Step 3: Building and pushing Docker image with Jib
-  - name: 'gradle:7.6-jdk17'
-    entrypoint: 'gradle'
-    args: ['clean', 'build', 'jib']
+  # Step 3: SCA (Software Composition Analysis) - Dependency Vulnerability Scan
+  - name: "gradle:7.6-jdk17"
+    entrypoint: "gradle"
+    args: ["dependencyCheckAnalyze"] # Using OWASP Dependency-Check Plugin
 
-  # Step 5: Deploying to Cloud Run
+  # Step 4: Building and pushing Docker image with Jib
+  - name: "gradle:7.6-jdk17"
+    entrypoint: "gradle"
+    args: ["clean", "build", "jib"]
+
+  # Step 5: Container Image Vulnerability Scanning
+  - name: "gcr.io/cloud-builders/gcloud"
+    args:
+      - "container"
+      - "images"
+      - "scan"
+      - "gcr.io/suga-new01/gradleservice:01"
+
+  # Step 6: Binary Authorization (Optional - extra security)
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'beta'
+      - 'container'
+      - 'binauthz'
+      - 'attestors'
+      - 'sign'
+      - '--artifact-url=gcr.io/suga-new01/gradleservice:01'
+
+  # Step 7: Deploying to Cloud Run
+  - name: "gcr.io/cloud-builders/gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "gcpservice1"
+      - "--image=gcr.io/suga-new01/gradleservice:01"
+      - "--platform=managed"
+      - "--region=us-central1"
+      - "--allow-unauthenticated" # Adjust as per your authentication needs
+      - '--traffic=0' # Important: No traffic yet to blue
+
+  # Step 8: Health Check or Smoke Test the Blue deployment
+  - name: 'gcr.io/cloud-builders/curl'
+    args:
+      - 'https://gcpservice1-blue-<random>.run.app/health'
+    # you can alternatively script it with bash to validate health
+
+  # Step 9: Switch Traffic (Green-to-Blue)
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
-      - 'deploy'
+      - 'services'
+      - 'update-traffic'
       - 'gcpservice1'
-      - '--image=gcr.io/suga-new01/gradleservice:01'
       - '--platform=managed'
       - '--region=us-central1'
-      - '--allow-unauthenticated'  # Adjust as per your authentication needs
+      - '--to-revisions=gcpservice1-blue=100'
+
+  # Step 10: Cleanup Old Revision (Optional)
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'services'
+      - 'delete'
+      - 'gcpservice1-green' # or old revision if needed
+      - '--platform=managed'
+      - '--region=us-central1'

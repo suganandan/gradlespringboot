@@ -62,6 +62,7 @@ public class HelloController {
 
     public ResponseEntity<Emptbl> fetchEmployeeFallback(Long id) {
         Emptbl fallbackEmp = new Emptbl();
+
         fallbackEmp.setEmpid(id);
         fallbackEmp.setName("Unknown Employee");
         return ResponseEntity.ok(fallbackEmp);

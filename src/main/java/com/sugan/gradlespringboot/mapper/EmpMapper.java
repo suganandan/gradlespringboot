@@ -4,12 +4,14 @@ import com.sugan.gradlespringboot.api.EmpRequest;
 import com.sugan.gradlespringboot.entity.Emptbl;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.List;
 @Mapper
 public interface EmpMapper {
+    Logger logger = LoggerFactory.getLogger(EmpMapper.class);
     EmpMapper INSTANCE = Mappers.getMapper(EmpMapper.class);
-    String default_name = "N/A";
+    String DEFAULT_NAME = "N/A";
     EmpRequest empToEmpDTO(Emptbl emptbl);
     //@Mapping(target = "empid", ignore = true)
     Emptbl EmpDTOToEmp(EmpRequest empRequest);
@@ -18,7 +20,7 @@ public interface EmpMapper {
         String result = "";
         result = result + first;
         result = result + second;
-        System.out.println("joined " + result);
+        logger.info("joined {}", result);
         return result;
     }
 

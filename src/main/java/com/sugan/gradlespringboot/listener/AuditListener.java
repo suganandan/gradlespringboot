@@ -9,18 +9,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuditListener {
 
-    private static int callCount = 0;
-
     @PreUpdate
     private void preUpdate(Emptbl entity2) {
-        callCount++;
-        System.out.println("PreUpdate " + callCount);
+        // I-001: Removed problematic static field modification.
+        // I-003: Replaced System.out with logger.
+        log.info("PreUpdate called.");
         log.info("PreUpdate called for: {}", entity2.toString());
     }
 
     @PrePersist
     private void prePersist(Emptbl entity2) {
-        callCount++;
+        // I-002: Removed problematic static field modification.
         log.info("PrePersist called for: {}", entity2.toString());
     }
 
@@ -44,9 +43,10 @@ public class AuditListener {
 
     public void audit(Object target) {
         // TODO store the audit trail in a table
-        if (target == null) {
-        } else {
-            System.out.println(target);
+        // I-004: Removed empty if block.
+        if (target != null) {
+            // I-005: Replaced System.out with logger.
+            log.info("Auditing target: {}", target);
         }
     }
 }

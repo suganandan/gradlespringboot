@@ -9,13 +9,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuditListener {
 
+    private static int callCount = 0;
+
     @PreUpdate
     private void preUpdate(Emptbl entity2) {
+        callCount++;
+        System.out.println("PreUpdate " + callCount);
         log.info("PreUpdate called for: {}", entity2.toString());
     }
 
     @PrePersist
     private void prePersist(Emptbl entity2) {
+        callCount++;
         log.info("PrePersist called for: {}", entity2.toString());
     }
 
@@ -35,5 +40,13 @@ public class AuditListener {
     private void postPersist(Emptbl entity3) {
 
         log.info("PostPersist called for: {}", entity3.toString());
+    }
+
+    public void audit(Object target) {
+        // TODO store the audit trail in a table
+        if (target == null) {
+        } else {
+            System.out.println(target);
+        }
     }
 }

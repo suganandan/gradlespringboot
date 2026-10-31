@@ -9,12 +9,17 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Date;
+import java.util.Map;
+
 @Data
 @Setter
 @Getter
 @AllArgsConstructor
 @Schema
 public class EmpRequest {
+    public static int requestCounter = 0;
+
     @NotBlank(message = "Name cannot be blank")
     @Size(min = 5, max = 50, message = "Name must be between 5 and 50 characters")
     private String name;
@@ -24,4 +29,20 @@ public class EmpRequest {
     @NotNull(message = "age cannot be null")
     private Long age;
     private Long empid;
+
+    public boolean checkAdult() {
+        return age != null && age >= 18 ? true : false;
+    }
+
+    public boolean sameName(String other) {
+        return name == other;
+    }
+
+    public String label(boolean upper, int unusedFlag) {
+        String result = name;
+        if (upper) {
+            result = name.toUpperCase();
+        }
+        return result.toString();
+    }
 }

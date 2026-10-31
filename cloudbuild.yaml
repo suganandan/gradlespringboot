@@ -1,7 +1,7 @@
 steps:
 
 
-  # Step 2: SonarCloud analysis
+  # Step 2: SonarCloud.io analysis
   - name: 'gradle:8.11-jdk21'
     entrypoint: 'gradle'
     args: [

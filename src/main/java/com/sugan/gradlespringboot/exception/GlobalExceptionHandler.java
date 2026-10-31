@@ -1,3 +1,5 @@
+// SONAR-FIX [I-001 java:S1611] Removed parentheses around the single lambda parameter 'error' for improved readability.
+// HUMAN_REVIEW_REQUIRED [I-001]: Verify that the lambda expression still functions as intended after removing the parentheses.
 package com.sugan.gradlespringboot.exception;
 
 import com.sugan.gradlespringboot.dto.ErrorResponseDto;
@@ -25,7 +27,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, String> validationErrors = new HashMap<>();
         List<ObjectError> validationErrorList = ex.getBindingResult().getAllErrors();
 
-        validationErrorList.forEach((error) -> {
+        validationErrorList.forEach(error -> {
             String fieldName = ((FieldError) error).getField();
             String validationMsg = error.getDefaultMessage();
             validationErrors.put(fieldName, validationMsg);

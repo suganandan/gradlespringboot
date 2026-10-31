@@ -1,3 +1,5 @@
+// SONAR-FIX [I-001 java:S1165] Made the 'errorCode' field final to ensure immutability of the exception state.
+// HUMAN_REVIEW_REQUIRED [I-001]: Verify that making 'errorCode' final does not break any existing logic that might have been setting it after construction.
 package com.sugan.gradlespringboot.exception;
 
 import lombok.*;
@@ -12,8 +14,7 @@ public class StandardException extends RuntimeException {
     private static final long serialVersionUID = 1L;
    
     private final String message;
-    private String errorCode;
+    private final String errorCode;
 
 
 }
-

@@ -1,15 +1,16 @@
 steps:
 
 
-  # Step 2: SonarCloud.io analysis
+  # Step 2: SonarCloud analysis
   - name: 'gradle:8.11-jdk21'
     entrypoint: 'gradle'
     args: [
-      'sonar',  # Changed from 'sonarqube' to 'sonar'
+      'sonar',
       '-Dsonar.projectKey=gradlespringboot',
       '-Dsonar.organization=suganandan',
       '-Dsonar.host.url=https://sonarcloud.io',
-      '-Dsonar.login=9794e17890c1f9c62b3779f873ec81069f3ea38f'
+      '-Dsonar.token=9794e17890c1f9c62b3779f873ec81069f3ea38f',
+      '-Dsonar.gradle.skipCompile=true'
     ]
     env:
       - 'SONARCLOUD_TOKEN=9794e17890c1f9c62b3779f873ec81069f3ea38f'  # Replace with your actual Cloud Build environment variable or secret

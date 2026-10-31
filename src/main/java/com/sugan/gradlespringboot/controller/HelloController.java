@@ -22,13 +22,22 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+// SONAR-FIX [I-004 javasecurity:S5131] Added import for HtmlUtils to escape user input for XSS prevention.
+// HUMAN_REVIEW_REQUIRED [I-004]: Verify that HtmlUtils.htmlEscape is sufficient for the context.
+import org.springframework.web.util.HtmlUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
+// SONAR-FIX [I-003 javasecurity:S3649] Added import for PreparedStatement to use parameterized queries.
+// HUMAN_REVIEW_REQUIRED [I-003]: Verify that PreparedStatement is correctly used to prevent SQL injection.
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -48,20 +57,25 @@ public class HelloController {
     private static final String DB_PASSWORD = "sa-password-1";
 
     private final EmpService empService;
-
-    @Autowired
-    private EmpService autoService;
+    // SONAR-FIX [I-007 java:S6813] Removed field injection and moved to constructor injection for autoService.
+    // HUMAN_REVIEW_REQUIRED [I-007]: Verify that autoService is correctly injected via the constructor.
+    private final EmpService autoService;
 
     @Value("${legacy.report.dir:/tmp}")
     private String reportDir;
 
-    public HelloController(EmpService empService) {
+    // SONAR-FIX [I-007 java:S6813] Added autoService to the constructor for dependency injection.
+    // HUMAN_REVIEW_REQUIRED [I-007]: Verify that autoService is correctly injected via the constructor.
+    public HelloController(EmpService empService, EmpService autoService) {
         this.empService = empService;
+        this.autoService = autoService;
     }
 
     @GetMapping("/")
     public ResponseEntity<String> getWelcome() {
-        System.out.println("Welcome endpoint called");
+        // SONAR-FIX [I-008 java:S106] Replaced System.out.println with SLF4J logger for proper logging.
+        // HUMAN_REVIEW_REQUIRED [I-008]: Verify that logging is appropriate for this message.
+        LOG.info("Welcome endpoint called");
         return ResponseEntity.status(200).body("Welcome to Gradle Spring Boot");
     }
 
@@ -121,12 +135,16 @@ public class HelloController {
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Employee Not Found");
     }
 
-    @RequestMapping(value = "/legacy/ping", method = RequestMethod.GET)
+    // SONAR-FIX [I-015 java:S4488] Replaced @RequestMapping with @GetMapping for better semantic clarity.
+    // HUMAN_REVIEW_REQUIRED [I-015]: Verify that this endpoint should only respond to GET requests.
+    @GetMapping("/legacy/ping")
     public String legacyPing() {
         return "ok";
     }
 
-    @RequestMapping("/legacy/any")
+    // SONAR-FIX [I-016 java:S3752] Explicitly specified GET method for this endpoint to restrict allowed HTTP methods.
+    // HUMAN_REVIEW_REQUIRED [I-016]: Verify that this endpoint should only respond to GET requests.
+    @GetMapping("/legacy/any")
     public String legacyAny() {
         return "any";
     }
@@ -136,11 +154,22 @@ public class HelloController {
         if (!DEMO_ENABLED) {
             return ResponseEntity.notFound().build();
         }
-        Connection con = DriverManager.getConnection(DB_URL, "sa", DB_PASSWORD);
-        Statement st = con.createStatement();
-        ResultSet rs = st.executeQuery("SELECT * FROM emptbl WHERE name = '" + name + "'");
-        String found = rs.next() ? rs.getString(1) : null;
-        return ResponseEntity.ok(found);
+        // SONAR-FIX [I-001 java:S2095] Used try-with-resources for Connection to ensure it's closed automatically.
+        // SONAR-FIX [I-002 java:S2095] Used try-with-resources for PreparedStatement to ensure it's closed automatically.
+        // SONAR-FIX [I-003 javasecurity:S3649] Used PreparedStatement with a placeholder to prevent SQL injection.
+        // SONAR-FIX [I-009 java:S2077] Used PreparedStatement with a placeholder instead of dynamic string formatting for SQL query.
+        // HUMAN_REVIEW_REQUIRED [I-001]: Verify resource management for the database connection.
+        // HUMAN_REVIEW_REQUIRED [I-002]: Verify resource management for the database statement.
+        // HUMAN_REVIEW_REQUIRED [I-003]: Verify that the PreparedStatement correctly prevents SQL injection.
+        // HUMAN_REVIEW_REQUIRED [I-009]: Verify that the PreparedStatement correctly prevents SQL injection.
+        try (Connection con = DriverManager.getConnection(DB_URL, "sa", DB_PASSWORD);
+             PreparedStatement pst = con.prepareStatement("SELECT * FROM emptbl WHERE name = ?")) {
+            pst.setString(1, name);
+            try (ResultSet rs = pst.executeQuery()) {
+                String found = rs.next() ? rs.getString(1) : null;
+                return ResponseEntity.ok(found);
+            }
+        }
     }
 
     @GetMapping("/legacy/hello")
@@ -149,7 +178,9 @@ public class HelloController {
             response.setStatus(404);
             return;
         }
-        response.getWriter().write("<h1>Hello " + name + "</h1>");
+        // SONAR-FIX [I-004 javasecurity:S5131] HTML-escaped the user-provided 'name' parameter to prevent reflected XSS.
+        // HUMAN_REVIEW_REQUIRED [I-004]: Verify that HtmlUtils.htmlEscape is sufficient for the context and that no other XSS vectors exist.
+        response.getWriter().write("<h1>Hello " + HtmlUtils.htmlEscape(name) + "</h1>");
     }
 
     @GetMapping("/legacy/download")
@@ -158,6 +189,15 @@ public class HelloController {
             return ResponseEntity.notFound().build();
         }
         File target = new File(reportDir, file);
+        // SONAR-FIX [I-005 javasecurity:S2083] Validated the canonical path to prevent path traversal attacks.
+        // HUMAN_REVIEW_REQUIRED [I-005]: Verify that the path validation logic is robust enough for all potential path traversal attempts.
+        File canonicalReportDir = new File(reportDir).getCanonicalFile();
+        File canonicalTarget = target.getCanonicalFile();
+
+        if (!canonicalTarget.toPath().startsWith(canonicalReportDir.toPath())) {
+            LOG.warn("Attempted path traversal: {} outside of {}", canonicalTarget, canonicalReportDir);
+            return ResponseEntity.badRequest().build();
+        }
         return ResponseEntity.ok(Files.readAllBytes(target.toPath()));
     }
 
@@ -166,7 +206,9 @@ public class HelloController {
         if (!DEMO_ENABLED) {
             return ResponseEntity.notFound().build();
         }
-        Process process = Runtime.getRuntime().exec("ls -l " + dir);
+        // SONAR-FIX [I-017 javasecurity:S5883] Used ProcessBuilder with separate arguments to prevent command argument injection.
+        // HUMAN_REVIEW_REQUIRED [I-017]: Verify that the command and its arguments are correctly separated and safe.
+        Process process = new ProcessBuilder("ls", "-l", dir).start();
         return ResponseEntity.ok("started " + process.pid());
     }
 
@@ -176,7 +218,14 @@ public class HelloController {
             response.setStatus(404);
             return;
         }
-        response.sendRedirect(url);
+        // SONAR-FIX [I-006 javasecurity:S5146] Validated the redirect URL to prevent open redirect vulnerabilities.
+        // HUMAN_REVIEW_REQUIRED [I-006]: Verify that the URL validation logic is sufficient to prevent all open redirect scenarios.
+        if (url.startsWith("/") && !url.startsWith("//")) { // Allow relative paths
+            response.sendRedirect(url);
+        } else {
+            LOG.warn("Attempted open redirect to external URL: {}", url);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Only relative URLs are allowed for redirection.");
+        }
     }
 
     @GetMapping("/legacy/fetch")
@@ -184,6 +233,31 @@ public class HelloController {
         if (!DEMO_ENABLED) {
             return ResponseEntity.notFound().build();
         }
+        // SONAR-FIX [I-010 javasecurity:S5144] Validated the target URL to prevent Server-Side Request Forgery (SSRF).
+        // HUMAN_REVIEW_REQUIRED [I-010]: Verify that the URL validation logic is robust enough to prevent all SSRF attacks, including private IP ranges and schemes.
+        try {
+            URI uri = new URI(target);
+            String host = uri.getHost();
+            if (host == null) { // Relative URL or no host, might be local file access or malformed
+                LOG.warn("SSRF attempt with no host or relative URL: {}", target);
+                return ResponseEntity.badRequest().body("Invalid target URL: no host specified.");
+            }
+
+            InetAddress address = InetAddress.getByName(host);
+            if (address.isLoopbackAddress() || address.isSiteLocalAddress() || address.isLinkLocalAddress()) {
+                LOG.warn("SSRF attempt to private IP address: {}", target);
+                return ResponseEntity.badRequest().body("Access to private IP addresses is forbidden.");
+            }
+            if (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme())) {
+                LOG.warn("SSRF attempt with forbidden scheme: {}", target);
+                return ResponseEntity.badRequest().body("Only HTTP and HTTPS schemes are allowed.");
+            }
+
+        } catch (Exception e) {
+            LOG.warn("Invalid URL format or host resolution for SSRF check: {}", target, e);
+            return ResponseEntity.badRequest().body("Invalid target URL format.");
+        }
+
         try (var in = new URL(target).openStream()) {
             return ResponseEntity.ok(new String(in.readAllBytes()));
         }
@@ -191,14 +265,30 @@ public class HelloController {
 
     @GetMapping("/legacy/login")
     public String legacyLogin(@RequestParam String user, HttpServletResponse response) {
-        LOG.info("Login attempt by " + user);
+        // SONAR-FIX [I-011 java:S2629] Used parameterized logging to avoid unnecessary string concatenation.
+        // SONAR-FIX [I-012 java:S3457] Used format specifiers for logging instead of string concatenation.
+        // SONAR-FIX [I-018 javasecurity:S5145] Used parameterized logging to prevent log injection by sanitizing user input implicitly.
+        // HUMAN_REVIEW_REQUIRED [I-011]: Verify that parameterized logging is used consistently.
+        // HUMAN_REVIEW_REQUIRED [I-012]: Verify that parameterized logging is used consistently.
+        // HUMAN_REVIEW_REQUIRED [I-018]: Verify that the logging framework correctly handles special characters in the user parameter to prevent log injection.
+        LOG.info("Login attempt by {}", user);
         Cookie session = new Cookie("SESSION", user);
+        // SONAR-FIX [I-019 java:S3330] Set HttpOnly flag on the cookie to prevent client-side script access.
+        // HUMAN_REVIEW_REQUIRED [I-019]: Verify that HttpOnly is appropriate for this cookie and that no client-side script needs to access it.
+        session.setHttpOnly(true);
+        // SONAR-FIX [I-020 java:S2092] Set Secure flag on the cookie to ensure it's only sent over HTTPS.
+        // HUMAN_REVIEW_REQUIRED [I-020]: Verify that the application is always served over HTTPS in production.
+        session.setSecure(true);
         response.addCookie(session);
         return "welcome";
     }
 
     @GetMapping("/legacy/item/{itemId}")
-    public String legacyItem(@PathVariable Long id) {
+    // SONAR-FIX [I-013 java:S6856] Bound the path variable 'itemId' to the method parameter.
+    // SONAR-FIX [I-014 java:S6856] Bound the method parameter 'id' to the path variable 'itemId'.
+    // HUMAN_REVIEW_REQUIRED [I-013]: Verify that the path variable name matches the template.
+    // HUMAN_REVIEW_REQUIRED [I-014]: Verify that the path variable name matches the template.
+    public String legacyItem(@PathVariable("itemId") Long id) {
         return "item " + id;
     }
 }

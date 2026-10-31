@@ -5,7 +5,7 @@ steps:
   - name: 'gradle:8.11-jdk21'
     entrypoint: 'gradle'
     args: [
-      'sonarqube',
+      'sonar',  # Changed from 'sonarqube' to 'sonar'
       '-Dsonar.projectKey=gradlespringboot',
       '-Dsonar.organization=suganandan',
       '-Dsonar.host.url=https://sonarcloud.io',

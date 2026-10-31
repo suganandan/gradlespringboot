@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.1.6'
-    id 'io.spring.dependency-management' version '1.1.5'
+    id 'org.springframework.boot' version '3.4.0'
+    id 'io.spring.dependency-management' version '1.1.6'
     id 'jacoco'
     id 'com.google.cloud.tools.jib' version '3.4.4'
     id 'org.sonarqube' version '3.3'
@@ -10,8 +10,8 @@ plugins {
 
 group = 'com.sugan'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
-targetCompatibility = '17'
+sourceCompatibility = '21'
+targetCompatibility = '21'
 
 
 configurations {
@@ -84,13 +84,16 @@ jacocoTestReport {
 }
 
 jib {
+    from {
+        image = "eclipse-temurin:21-jre"
+    }
     to {
         image = "gcr.io/suga-new01/gradleservice:01"
     }
 }
 ext {
-    set('springCloudGcpVersion', "5.4.3")
-    set('springCloudVersion', "2023.0.2")
+    set('springCloudGcpVersion', "5.8.0")
+    set('springCloudVersion', "2024.0.0")
 }
 dependencyManagement {
     imports {

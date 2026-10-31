@@ -2,20 +2,20 @@ steps:
 
 
   # Step 2: SonarCloud analysis
-  - name: 'gradle:7.6-jdk17'
+  - name: 'gradle:8.11-jdk21'
     entrypoint: 'gradle'
     args: [
       'sonarqube',
       '-Dsonar.projectKey=gradlespringboot',
       '-Dsonar.organization=suganandan',
       '-Dsonar.host.url=https://sonarcloud.io',
-      '-Dsonar.login=d6ce8689c7a01c4d897188425e5f21896f2e33ca'
+      '-Dsonar.login=9794e17890c1f9c62b3779f873ec81069f3ea38f'
     ]
     env:
-      - 'SONARCLOUD_TOKEN=d6ce8689c7a01c4d897188425e5f21896f2e33ca'  # Replace with your actual Cloud Build environment variable or secret
+      - 'SONARCLOUD_TOKEN=9794e17890c1f9c62b3779f873ec81069f3ea38f'  # Replace with your actual Cloud Build environment variable or secret
 
   # Step 3: Building and pushing Docker image with Jib
-  - name: 'gradle:7.6-jdk17'
+  - name: 'gradle:8.11-jdk21'
     entrypoint: 'gradle'
     args: ['clean', 'build', 'jib']
 

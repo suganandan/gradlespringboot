@@ -1,7 +1,3 @@
-// SONAR-FIX [I-003 java:S1128] Removed unused import 'java.util.Date'.
-// HUMAN_REVIEW_REQUIRED [I-003]: Verify that java.util.Date is indeed not used anywhere in the file.
-// SONAR-FIX [I-004 java:S1128] Removed unused import 'java.util.Map'.
-// HUMAN_REVIEW_REQUIRED [I-004]: Verify that java.util.Map is indeed not used anywhere in the file.
 package com.sugan.gradlespringboot.api;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,7 +9,8 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Objects;
+import java.util.Date;
+import java.util.Map;
 
 @Data
 @Setter
@@ -34,26 +31,18 @@ public class EmpRequest {
     private Long empid;
 
     public boolean checkAdult() {
-        // SONAR-FIX [I-005 java:S1125] Removed redundant boolean literal by simplifying the ternary operator.
-        // HUMAN_REVIEW_REQUIRED [I-005]: Verify that the boolean logic remains the same.
-        return age != null && age >= 18;
+        return age != null && age >= 18 ? true : false;
     }
 
     public boolean sameName(String other) {
-        // SONAR-FIX [I-001 java:S4973] Compared String objects using Objects.equals() for null-safe value comparison.
-        // HUMAN_REVIEW_REQUIRED [I-001]: Verify that comparing string values is the intended behavior.
-        return Objects.equals(name, other);
+        return name == other;
     }
 
-    // SONAR-FIX [I-002 java:S1172] Removed unused method parameter 'unusedFlag'.
-    // HUMAN_REVIEW_REQUIRED [I-002]: Verify that 'unusedFlag' is not needed for any future functionality.
-    public String label(boolean upper) {
+    public String label(boolean upper, int unusedFlag) {
         String result = name;
         if (upper) {
             result = name.toUpperCase();
         }
-        // SONAR-FIX [I-006 java:S1858] Removed redundant toString() call on a String object.
-        // HUMAN_REVIEW_REQUIRED [I-006]: Verify that returning the String directly does not change behavior.
-        return result;
+        return result.toString();
     }
 }

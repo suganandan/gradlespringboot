@@ -1,6 +1,8 @@
 package com.sugan.gradlespringboot.exception;
 
 import com.sugan.gradlespringboot.dto.ErrorResponseDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -14,12 +16,14 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
@@ -37,8 +41,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGlobalException(Exception exception,
                                                                   WebRequest webRequest) {
-        exception.printStackTrace();
-        System.out.println("Unhandled: " + exception.getMessage());
+        logger.error("An unhandled exception occurred", exception);
+        logger.error("Unhandled: {}", exception.getMessage());
         ErrorResponseDto errorResponseDTO = new ErrorResponseDto(
                 webRequest.getDescription(false),
                 HttpStatus.INTERNAL_SERVER_ERROR,
@@ -57,18 +61,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
 
         return new ResponseEntity<>(errorResponseDTO, HttpStatus.BAD_REQUEST);
-    }
-
-    private String unusedHelper(String input, int unusedFlag) {
-        String status = "500";
-        try {
-            Integer.parseInt(input);
-        } catch (Throwable t) {
-        }
-        if (status == "500") {
-            return input.toString();
-        }
-        return null;
     }
 
 }

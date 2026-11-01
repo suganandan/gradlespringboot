@@ -1,9 +1,7 @@
 package com.sugan.gradlespringboot;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
@@ -12,17 +10,11 @@ import org.springframework.cache.annotation.EnableCaching;
 @EnableCaching
 public class GradlespringbootApplication {
 
-    private static final String ADMIN_PASSWORD = "admin123";
+    private static final Logger log = LoggerFactory.getLogger(GradlespringbootApplication.class);
 
     public static void main(String[] args) {
-        String unusedBanner = "starting";
-        System.out.println("Starting application");
+        log.info("Starting application");
         SpringApplication.run(GradlespringbootApplication.class, args);
     }
-
-    // TODO replace the hard-coded admin password with a secret
-    // List<String> debug = new ArrayList<>();
-    // debug.add("started");
-    // System.out.println(debug);
 
 }

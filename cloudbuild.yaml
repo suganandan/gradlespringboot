@@ -13,7 +13,7 @@ steps:
   - id: fossa-analyze
     name: 'gradle:8.11-jdk21'
     entrypoint: 'bash'
-    env: ['FOSSA_API_KEY=5722f023f54b58e4d7d1cb508eae48fc']
+    env: ['FOSSA_API_KEY=4685a405f9d5bc60c6dd17aa44349d93']
     args:
       - '-c'
       - |
@@ -30,7 +30,7 @@ steps:
   - id: fossa-test
     name: 'gradle:8.11-jdk21'
     entrypoint: 'bash'
-    env: ['FOSSA_API_KEY=5722f023f54b58e4d7d1cb508eae48fc']
+    env: ['FOSSA_API_KEY=4685a405f9d5bc60c6dd17aa44349d93']
     args:
       - '-c'
       - |

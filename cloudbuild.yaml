@@ -1,31 +1,81 @@
+substitutions:
+  _FOSSA_PROJECT: 'github.com/suganandan/gradlespringboot'   # must match project.id in .fossa.yml
+  _FOSSA_GATE: 'false'                                        # 'true' = the build fails when FOSSA policy is violated
+
 steps:
-
-
-  # Step 2: SonarCloud analysis
-  - name: 'gradle:8.11-jdk21'
+  # Step 1: build and unit tests (writes the JaCoCo report that Sonar reads)
+  - id: build-test
+    name: 'gradle:8.11-jdk21'
     entrypoint: 'gradle'
-    args: [
-      'sonar',
-      '-Dsonar.projectKey=gradlespringboot',
-      '-Dsonar.organization=suganandan',
-      '-Dsonar.host.url=https://sonarcloud.io',
-      '-Dsonar.token=9794e17890c1f9c62b3779f873ec81069f3ea38f',
-      '-Dsonar.gradle.skipCompile=true'
-    ]
-    env:
-      - 'SONARCLOUD_TOKEN=9794e17890c1f9c62b3779f873ec81069f3ea38f'  # Replace with your actual Cloud Build environment variable or secret
+    args: ['clean', 'build', 'jacocoTestReport']
 
-  # Step 3: Building and pushing Docker image with Jib
-  - name: 'gradle:8.11-jdk21'
+  # Step 2: FOSSA scan - uploads the dependency tree
+  - id: fossa-analyze
+    name: 'gradle:8.11-jdk21'
+    entrypoint: 'bash'
+    env: ['FOSSA_API_KEY=5722f023f54b58e4d7d1cb508eae48fc']
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        REV="${COMMIT_SHA}"
+        if [ -z "$$REV" ]; then REV="manual-${BUILD_ID}"; fi
+        BR="${BRANCH_NAME}"
+        if [ -z "$$BR" ]; then BR="main"; fi
+        curl -fsSL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash -s -- -b /usr/local/bin
+        fossa analyze --project "${_FOSSA_PROJECT}" --revision "$$REV" --branch "$$BR"
+
+  # Step 3: FOSSA policy check
+  # The gate is off by default: the fix agent works through the findings, so the build must not stop on them yet.
+  - id: fossa-test
+    name: 'gradle:8.11-jdk21'
+    entrypoint: 'bash'
+    env: ['FOSSA_API_KEY=5722f023f54b58e4d7d1cb508eae48fc']
+    args:
+      - '-c'
+      - |
+        set -uo pipefail
+        REV="${COMMIT_SHA}"
+        if [ -z "$$REV" ]; then REV="manual-${BUILD_ID}"; fi
+        curl -fsSL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash -s -- -b /usr/local/bin
+        if fossa test --project "${_FOSSA_PROJECT}" --revision "$$REV"; then
+          echo "FOSSA policy check passed"
+        elif [ "${_FOSSA_GATE}" = "true" ]; then
+          echo "FOSSA policy check failed and the gate is on"; exit 1
+        else
+          echo "FOSSA found policy issues (gate is off, the build continues)"
+        fi
+
+  # Step 4: SonarQube Cloud analysis
+  - id: sonar
+    name: 'gradle:8.11-jdk21'
+    entrypoint: 'bash'
+    env: ['SONAR_TOKEN=9794e17890c1f9c62b3779f873ec81069f3ea38f']
+    args:
+      - '-c'
+      - |
+        gradle sonar \
+          -Dsonar.projectKey=gradlespringboot \
+          -Dsonar.organization=suganandan \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.token=$$SONAR_TOKEN \
+          -Dsonar.gradle.skipCompile=true
+
+  # Step 5: build and push the Docker image with Jib (tests already ran in step 1)
+  - id: jib
+    name: 'gradle:8.11-jdk21'
     entrypoint: 'gradle'
-    args: ['clean', 'build', 'jib']
+    args: ['jib', '-x', 'test']
 
-  # Step 4: Print the Commit SHA
-  - name: 'ubuntu'
-    script: 'echo "Commit SHA: $COMMIT_SHA"'
+  # Step 6: print the commit SHA
+  - id: print-sha
+    name: 'ubuntu'
+    entrypoint: 'bash'
+    args: ['-c', 'echo "Commit SHA: ${COMMIT_SHA}"']
 
-  # Step 5: Deploying to Cloud Run
-  - name: 'gcr.io/cloud-builders/gcloud'
+  # Step 7: deploy to Cloud Run
+  - id: deploy
+    name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
       - 'deploy'
@@ -33,4 +83,6 @@ steps:
       - '--image=gcr.io/suga-new01/gradleservice:01'
       - '--platform=managed'
       - '--region=us-central1'
-      - '--allow-unauthenticated'  # Adjust as per your authentication needs
+      - '--allow-unauthenticated'   # adjust to your authentication needs
+
+timeout: 1800s

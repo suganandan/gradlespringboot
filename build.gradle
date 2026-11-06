@@ -5,7 +5,6 @@ plugins {
     id 'jacoco'
     id 'com.google.cloud.tools.jib' version '3.4.4'
     id 'org.sonarqube' version '4.4.1.3373'
-    id 'org.owasp.dependencycheck' version '12.1.0' // latest version as of 2025
 }
 
 group = 'com.sugan'
@@ -51,17 +50,6 @@ dependencies {
     implementation 'io.github.resilience4j:resilience4j-spring-boot2:1.7.1'  // Retry & Fallback
 }
 
-// Optional: configure it if you want custom report paths
-/*dependencyCheck {
-    failBuildOnCVSS = 7.0
-    formats = ['HTML', 'JSON']
-    analyzers {
-        assemblyEnabled = false
-    }
-    nvd {
-        apiKey = '489dfbc8-3d5f-4716-ab97-14db15b3a7ec'
-    }
-}*/
 
 
 

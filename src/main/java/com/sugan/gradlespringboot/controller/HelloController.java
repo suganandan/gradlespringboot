@@ -178,7 +178,9 @@ public class HelloController {
 
         // Check if the resolved path is still within the base directory
         if (!requestedPath.startsWith(baseDir)) {
-            LOG.warn("Attempted path traversal: {} outside of {}", sanitizeLogInput(file), reportDir); // Fix I-004
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Attempted path traversal: {} outside of {}", sanitizeLogInput(file), reportDir);
+            }
             return ResponseEntity.badRequest().build();
         }
         File target = requestedPath.toFile();
@@ -195,7 +197,9 @@ public class HelloController {
         }
         // Validate 'dir' to ensure it's a safe path component (simple directory name)
         if (!dir.matches("^[a-zA-Z0-9_-]+$")) { // Fix I-002: Stricter validation
-            LOG.warn("Attempted command injection with invalid directory name format: {}", sanitizeLogInput(dir)); // Fix I-005
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Attempted command injection with invalid directory name format: {}", sanitizeLogInput(dir));
+            }
             return ResponseEntity.badRequest().body("Invalid directory name format.");
         }
 
@@ -221,7 +225,9 @@ public class HelloController {
         if (url.startsWith("/") && !url.startsWith("//") && !url.contains(":")) {
             response.sendRedirect(url);
         } else {
-            LOG.warn("Attempted open redirect with invalid URL: {}", sanitizeLogInput(url)); // Fix I-006
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Attempted open redirect with invalid URL: {}", sanitizeLogInput(url));
+            }
             response.setStatus(HttpStatus.BAD_REQUEST.value());
         }
     }
@@ -255,7 +261,7 @@ public class HelloController {
             return ResponseEntity.badRequest().body("Access to this host is not allowed.");
         }
 
-        try (var in = url.openStream()) { // Fix I-003: Already mitigated by protocol and host validation
+        try (var in = url.openStream()) { // I-004: Mitigated by preceding protocol and host validation
             return ResponseEntity.ok(new String(in.readAllBytes()));
         } catch (IOException e) {
             LOG.error("Error fetching URL: {}", target, e);

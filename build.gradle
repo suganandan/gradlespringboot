@@ -82,11 +82,12 @@ jib {
 ext {
     set('springCloudGcpVersion', "5.8.0")
     set('springCloudVersion', "2024.0.0")
-    set('spring-framework.version', '6.2.1')
+    set('spring-framework.version', '6.2.2')
     set('tomcat.version', '10.1.34')
-    set('jackson-bom.version', '2.18.2')
+    set('jackson-bom.version', '2.18.6')
     set('micrometer.version', '1.14.2')
     set('spring-data.version', '3.4.1')
+    set('logback.version', '1.5.19')
 }
 dependencyManagement {
     imports {
@@ -94,6 +95,9 @@ dependencyManagement {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
     }
     dependencies {
-        dependency 'org.postgresql:postgresql:42.7.5'
+        dependency 'org.springframework.boot:spring-boot:3.4.1'
+        dependency 'org.postgresql:postgresql:42.7.12'
+        dependency 'org.springframework.data:spring-data-commons:3.4.1'
+        dependency 'org.apache.commons:commons-lang3:3.18.0'
     }
 }

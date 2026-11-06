@@ -146,7 +146,7 @@ public class HelloController {
         // Use try-with-resources for Connection, PreparedStatement, ResultSet
         // Use PreparedStatement to prevent SQL Injection
         try (Connection con = DriverManager.getConnection(DB_URL, "sa", dbPassword);
-             PreparedStatement pst = con.prepareStatement("SELECT * FROM emptbl WHERE name = ?")) {
+             PreparedStatement pst = con.prepareStatement("SELECT empid FROM emptbl WHERE name = ?")) { // Fix I-001
             pst.setString(1, name);
             try (ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
@@ -178,7 +178,7 @@ public class HelloController {
 
         // Check if the resolved path is still within the base directory
         if (!requestedPath.startsWith(baseDir)) {
-            LOG.warn("Attempted path traversal: {} outside of {}", file, reportDir);
+            LOG.warn("Attempted path traversal: {} outside of {}", sanitizeLogInput(file), reportDir); // Fix I-004
             return ResponseEntity.badRequest().build();
         }
         File target = requestedPath.toFile();
@@ -193,16 +193,16 @@ public class HelloController {
         if (!DEMO_ENABLED) {
             return ResponseEntity.notFound().build();
         }
-        // Use ProcessBuilder to prevent command injection
-        // Validate 'dir' to ensure it's a safe path component
-        if (dir.contains(";") || dir.contains("&") || dir.contains("|") || dir.contains("..") || dir.contains("/")) {
-            LOG.warn("Attempted command injection with invalid directory: {}", dir);
-            return ResponseEntity.badRequest().body("Invalid directory name.");
+        // Validate 'dir' to ensure it's a safe path component (simple directory name)
+        if (!dir.matches("^[a-zA-Z0-9_-]+$")) { // Fix I-002: Stricter validation
+            LOG.warn("Attempted command injection with invalid directory name format: {}", sanitizeLogInput(dir)); // Fix I-005
+            return ResponseEntity.badRequest().body("Invalid directory name format.");
         }
 
         List<String> command = new ArrayList<>();
         command.add("ls");
         command.add("-l");
+        command.add("--"); // Fix I-002: Treat subsequent arguments as non-options
         command.add(dir); // 'dir' is passed as a separate argument
 
         ProcessBuilder pb = new ProcessBuilder(command);
@@ -221,7 +221,7 @@ public class HelloController {
         if (url.startsWith("/") && !url.startsWith("//") && !url.contains(":")) {
             response.sendRedirect(url);
         } else {
-            LOG.warn("Attempted open redirect with invalid URL: {}", url);
+            LOG.warn("Attempted open redirect with invalid URL: {}", sanitizeLogInput(url)); // Fix I-006
             response.setStatus(HttpStatus.BAD_REQUEST.value());
         }
     }
@@ -255,7 +255,7 @@ public class HelloController {
             return ResponseEntity.badRequest().body("Access to this host is not allowed.");
         }
 
-        try (var in = url.openStream()) {
+        try (var in = url.openStream()) { // Fix I-003: Already mitigated by protocol and host validation
             return ResponseEntity.ok(new String(in.readAllBytes()));
         } catch (IOException e) {
             LOG.error("Error fetching URL: {}", target, e);
@@ -279,5 +279,9 @@ public class HelloController {
     @GetMapping("/legacy/item/{itemId}")
     public String legacyItem(@PathVariable("itemId") Long id) {
         return "item " + id;
+    }
+
+    private String sanitizeLogInput(String input) {
+        return input == null ? "null" : input.replaceAll("[\r\n]", "_");
     }
 }

@@ -25,6 +25,7 @@ import org.springframework.web.util.HtmlUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -261,11 +262,23 @@ public class HelloController {
             return ResponseEntity.badRequest().body("Access to this host is not allowed.");
         }
 
-        try (var in = url.openStream()) { // I-004: Mitigated by preceding protocol and host validation
-            return ResponseEntity.ok(new String(in.readAllBytes()));
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000); // 5 seconds
+            connection.setReadTimeout(5000);    // 5 seconds
+
+            try (var in = connection.getInputStream()) { // I-004: Mitigated by preceding protocol and host validation
+                return ResponseEntity.ok(new String(in.readAllBytes()));
+            }
         } catch (IOException e) {
             LOG.error("Error fetching URL: {}", target, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to fetch content.");
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 

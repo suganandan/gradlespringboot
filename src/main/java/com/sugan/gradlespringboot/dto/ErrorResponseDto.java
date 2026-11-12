@@ -1,7 +1,6 @@
 package com.sugan.gradlespringboot.dto;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 import org.springframework.http.HttpStatus;
 
@@ -11,7 +10,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class ErrorResponseDto {
-    public static final String default_message = "Unexpected error";
+    public static final String DEFAULT_MESSAGE = "Unexpected error";
 
     private String apiPath;
     private HttpStatus errorCode;
@@ -19,12 +18,12 @@ public class ErrorResponseDto {
     private LocalDateTime errorTime;
 
     public boolean emptyMessage() {
-        return errorMessage == null || errorMessage.length() == 0 ? true : false;
+        return errorMessage == null || errorMessage.isEmpty();
     }
 
-    public static String Format_Time(LocalDateTime t) {
+    public static String formatTime(LocalDateTime t) {
         String r = t.toString();
-        return r.toString();
+        return r;
     }
 
 }

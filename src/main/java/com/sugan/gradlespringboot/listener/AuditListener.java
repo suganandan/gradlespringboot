@@ -3,24 +3,27 @@ package com.sugan.gradlespringboot.listener;
 import com.sugan.gradlespringboot.entity.Emptbl;
 import jakarta.persistence.*;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 public class AuditListener {
 
-    private static int callCount = 0;
+    private static final Logger log = LoggerFactory.getLogger(AuditListener.class);
 
     @PreUpdate
     private void preUpdate(Emptbl entity2) {
-        callCount++;
-        System.out.println("PreUpdate " + callCount);
+        // I-001: Removed problematic static field modification.
+        // I-003: Replaced System.out with logger.
+        log.info("PreUpdate called.");
         log.info("PreUpdate called for: {}", entity2.toString());
     }
 
     @PrePersist
     private void prePersist(Emptbl entity2) {
-        callCount++;
+        // I-002: Removed problematic static field modification.
         log.info("PrePersist called for: {}", entity2.toString());
     }
 
@@ -44,9 +47,10 @@ public class AuditListener {
 
     public void audit(Object target) {
         // TODO store the audit trail in a table
-        if (target == null) {
-        } else {
-            System.out.println(target);
+        // I-004: Removed empty if block.
+        if (target != null) {
+            // I-005: Replaced System.out with logger.
+            log.info("Auditing target: {}", target);
         }
     }
 }

@@ -5,24 +5,22 @@ import jakarta.persistence.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 @Slf4j
 @Component
 public class AuditListener {
 
-    private static final AtomicInteger callCount = new AtomicInteger(0);
+    private static int callCount = 0;
 
     @PreUpdate
     private void preUpdate(Emptbl entity2) {
-        int currentCallCount = callCount.incrementAndGet();
-        log.info("PreUpdate call count: {}", currentCallCount);
+        callCount++;
+        System.out.println("PreUpdate " + callCount);
         log.info("PreUpdate called for: {}", entity2.toString());
     }
 
     @PrePersist
     private void prePersist(Emptbl entity2) {
-        callCount.incrementAndGet();
+        callCount++;
         log.info("PrePersist called for: {}", entity2.toString());
     }
 
@@ -46,8 +44,9 @@ public class AuditListener {
 
     public void audit(Object target) {
         // TODO store the audit trail in a table
-        if (target != null) {
-            log.info("Audit target: {}", target);
+        if (target == null) {
+        } else {
+            System.out.println(target);
         }
     }
 }

@@ -9,8 +9,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
-import java.util.Map;
+import java.util.Objects;
 
 @Data
 @Setter
@@ -31,11 +30,11 @@ public class EmpRequest {
     private Long empid;
 
     public boolean checkAdult() {
-        return age != null && age >= 18 ? true : false;
+        return age != null && age >= 18;
     }
 
     public boolean sameName(String other) {
-        return name == other;
+        return Objects.equals(name, other);
     }
 
     public String label(boolean upper, int unusedFlag) {
@@ -43,6 +42,6 @@ public class EmpRequest {
         if (upper) {
             result = name.toUpperCase();
         }
-        return result.toString();
+        return result;
     }
 }

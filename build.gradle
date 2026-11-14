@@ -59,7 +59,7 @@ dependencies {
         assemblyEnabled = false
     }
     nvd {
-        apiKey = '489dfbc8-3d5f-4716-ab97-14db15b3a7ec'
+        apiKey = System.getenv('NVD_API_KEY')
     }
 }*/
 
@@ -76,10 +76,35 @@ jacoco {
 jacocoTestReport {
     dependsOn test // tests are required to run before generating the report
     reports {
-        xml.required = true
+        xml.required = true   // SonarQube Cloud and junit_agent.py read this file
+        xml.outputLocation = layout.buildDirectory.file('reports/jacoco/test/jacocoTestReport.xml')
         csv.required = false
         html.required = true
         html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+}
+
+// Coverage gate. Off unless it is asked for: gradle jacocoTestCoverageVerification -PcoverageMin=0.60
+// (cloudbuild.yaml runs it in the coverage-report step and only fails the build when _COVERAGE_GATE=true)
+jacocoTestCoverageVerification {
+    dependsOn test
+    violationRules {
+        rule {
+            element = 'BUNDLE'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = (project.findProperty('coverageMin') ?: '0.60').toBigDecimal()
+            }
+        }
+    }
+}
+
+// Tell SonarQube Cloud where the coverage report is (the plugin looks here by default, this makes it explicit)
+sonar {
+    properties {
+        property 'sonar.coverage.jacoco.xmlReportPaths', 'build/reports/jacoco/test/jacocoTestReport.xml'
+        property 'sonar.coverage.exclusions', '**/*Application.java'   // the main class has nothing worth testing
     }
 }
 
@@ -94,28 +119,10 @@ jib {
 ext {
     set('springCloudGcpVersion', "5.8.0")
     set('springCloudVersion', "2024.0.0")
-    set('spring-framework.version', '6.2.19')
-    set('tomcat.version', '10.1.59')
-    set('logback.version', '1.5.34')
 }
 dependencyManagement {
     imports {
         mavenBom "com.google.cloud:spring-cloud-gcp-dependencies:${springCloudGcpVersion}"
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-    }
-    dependencies {
-        dependency 'com.fasterxml.jackson.core:jackson-databind:2.18.12'
-        dependency 'com.fasterxml.jackson.core:jackson-core:2.18.11'
-        dependency 'com.google.guava:guava:33.7.2-android'
-        dependency 'io.grpc:grpc-netty-shaded:1.75.0'
-        dependency 'io.micrometer:micrometer-core:1.15.12'
-        dependency 'org.postgresql:postgresql:42.7.12'
-        dependency 'org.springframework.boot:spring-boot:3.5.14'
-        dependency 'org.springframework.boot:spring-boot-devtools:3.5.14'
-        dependency 'org.springframework.boot:spring-boot-starter-actuator:3.5.12'
-        dependency 'org.springframework.boot:spring-boot-autoconfigure:3.5.15'
-        dependency 'org.springframework.data:spring-data-commons:3.5.12'
-        dependency 'org.springframework.security:spring-security-crypto:6.4.4'
-        dependency 'org.apache.commons:commons-lang3:3.18.0'
     }
 }

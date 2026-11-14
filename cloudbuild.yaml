@@ -1,6 +1,11 @@
 substitutions:
   _FOSSA_PROJECT: 'github.com/suganandan/gradlespringboot'   # must match project.id in .fossa.yml
   _FOSSA_GATE: 'false'                                        # 'true' = the build fails when FOSSA policy is violated
+  _COVERAGE_GATE: 'false'                                     # 'true' = the build fails when line coverage is below _COVERAGE_MIN
+  _COVERAGE_MIN: '0.60'                                       # 0.60 = 60% of lines
+  _COVERAGE_BUCKET: 'suga-new01-vulnerabilities'              # the coverage report of every build is stored under coverage/<build id>/
+
+# Tokens are hardcoded in the env lines of the steps below (by request).
 
 steps:
   # Step 1: build and unit tests (writes the JaCoCo report that Sonar reads)
@@ -9,7 +14,36 @@ steps:
     entrypoint: 'gradle'
     args: ['clean', 'build', 'jacocoTestReport']
 
-  # Step 2: FOSSA scan - uploads the dependency tree
+  # Step 2: code coverage report. Prints line and branch coverage, packs the HTML report, applies the optional gate.
+  # The gate is off by default (like the FOSSA gate): junit_agent.py raises the coverage, so the build must not stop on it yet.
+  - id: coverage-report
+    name: 'gradle:8.11-jdk21'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -uo pipefail
+        F=build/reports/jacoco/test/jacocoTestReport.xml
+        if [ ! -f "$$F" ]; then
+          echo "COVERAGE: no JaCoCo report, no test ran. Run junit_agent.py to create tests."
+          exit 0
+        fi
+        for T in LINE BRANCH; do
+          L=$$(grep -o "<counter type=\"$$T\" missed=\"[0-9]*\" covered=\"[0-9]*\"/>" "$$F" | tail -1)
+          M=$$(echo "$$L" | sed -E 's/.*missed="([0-9]+)".*/\1/')
+          C=$$(echo "$$L" | sed -E 's/.*covered="([0-9]+)".*/\1/')
+          if [ -n "$$M" ] && [ $$((M + C)) -gt 0 ]; then
+            echo "COVERAGE $$T: $$(awk "BEGIN{printf \"%.1f\", 100*$$C/($$M+$$C)}")% ($$C of $$((M + C)) covered)"
+          fi
+        done
+        tar czf build/jacoco-html.tgz -C build jacocoHtml 2>/dev/null || true
+        if [ "${_COVERAGE_GATE}" = "true" ]; then
+          gradle jacocoTestCoverageVerification -PcoverageMin=${_COVERAGE_MIN} || { echo "Coverage is below ${_COVERAGE_MIN} and the gate is on"; exit 1; }
+        else
+          gradle jacocoTestCoverageVerification -PcoverageMin=${_COVERAGE_MIN} || echo "Coverage is below ${_COVERAGE_MIN} (gate is off, the build continues)"
+        fi
+
+  # Step 3: FOSSA scan - uploads the dependency tree
   - id: fossa-analyze
     name: 'gradle:8.11-jdk21'
     entrypoint: 'bash'
@@ -25,7 +59,7 @@ steps:
         curl -fsSL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash -s -- -b /usr/local/bin
         fossa analyze --project "${_FOSSA_PROJECT}" --revision "$$REV" --branch "$$BR"
 
-  # Step 3: FOSSA policy check
+  # Step 4: FOSSA policy check
   # The gate is off by default: the fix agent works through the findings, so the build must not stop on them yet.
   - id: fossa-test
     name: 'gradle:8.11-jdk21'
@@ -46,7 +80,7 @@ steps:
           echo "FOSSA found policy issues (gate is off, the build continues)"
         fi
 
-  # Step 4: SonarQube Cloud analysis
+  # Step 5: SonarQube Cloud analysis (also sends the JaCoCo coverage report from step 1)
   - id: sonar
     name: 'gradle:8.11-jdk21'
     entrypoint: 'bash'
@@ -59,21 +93,22 @@ steps:
           -Dsonar.organization=suganandan \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.token=$$SONAR_TOKEN \
-          -Dsonar.gradle.skipCompile=true
+          -Dsonar.gradle.skipCompile=true \
+          -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml
 
-  # Step 5: build and push the Docker image with Jib (tests already ran in step 1)
+  # Step 6: build and push the Docker image with Jib (tests already ran in step 1)
   - id: jib
     name: 'gradle:8.11-jdk21'
     entrypoint: 'gradle'
     args: ['jib', '-x', 'test']
 
-  # Step 6: print the commit SHA
+  # Step 7: print the commit SHA
   - id: print-sha
     name: 'ubuntu'
     entrypoint: 'bash'
     args: ['-c', 'echo "Commit SHA: ${COMMIT_SHA}"']
 
-  # Step 7: deploy to Cloud Run
+  # Step 8: deploy to Cloud Run
   - id: deploy
     name: 'gcr.io/cloud-builders/gcloud'
     args:
@@ -84,5 +119,13 @@ steps:
       - '--platform=managed'
       - '--region=us-central1'
       - '--allow-unauthenticated'   # adjust to your authentication needs
+
+# Keeps the coverage report of every build (XML for tools, HTML for people), next to the FOSSA and Sonar reports
+artifacts:
+  objects:
+    location: 'gs://${_COVERAGE_BUCKET}/coverage/${BUILD_ID}/'
+    paths:
+      - 'build/reports/jacoco/test/jacocoTestReport.xml'
+      - 'build/jacoco-html.tgz'
 
 timeout: 1800s

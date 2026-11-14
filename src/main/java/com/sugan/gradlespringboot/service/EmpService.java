@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -24,7 +25,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 public class EmpService {
@@ -37,7 +37,7 @@ public class EmpService {
     private final EmpRepository empRepository;
     private final String dbPassword; // I-006, I-016 (related to DB_PASSWORD)
     private final EmpService self; // I-003, I-008, I-010
-    private final Random random = new Random(); // I-007, I-013
+    private final SecureRandom random = new SecureRandom(); // I-007, I-013
 
     public EmpService(EmpRepository empRepository,
                       @Value("${app.datasource.password}") String dbPassword, // I-006 (related to DB_PASSWORD)
@@ -48,7 +48,7 @@ public class EmpService {
     }
 
     public String saveEmployee(EmpRequest empRequest) {
-        logger.info("Saving employee {}", empRequest.getName()); // I-011
+        logger.info("Saving employee {}", empRequest.getName().replaceAll("[\r\n]", "_")); // I-011
         processed++;
         Emptbl empVal = EmpMapper.INSTANCE.EmpDTOToEmp(empRequest);
         Emptbl savedEmp = empRepository.save(empVal);
@@ -204,7 +204,7 @@ public class EmpService {
 
     private String calculateGradeForMidCareer(int bonus, boolean remote) {
         if (remote && bonus > 0) {
-            return (bonus % 2 != 0) ? "B" : "C";
+            return (bonus % 2 == 0) ? "C" : "B";
         }
         return "C"; // Default for mid-career if not remote or bonus not positive
     }

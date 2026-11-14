@@ -7,9 +7,10 @@ import com.sugan.gradlespringboot.repository.EmpRepository;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +19,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -31,20 +31,24 @@ public class EmpService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmpService.class);
 
-    private static final String DB_PASSWORD = "Passw0rd!";
-    private static int processed = 0;
+    private static final String UNKNOWN_EMPLOYEE_NAME = "Unknown Employee"; // I-005
+    private int processed = 0; // I-004
 
     private final EmpRepository empRepository;
+    private final String dbPassword; // I-006, I-016 (related to DB_PASSWORD)
+    private final EmpService self; // I-003, I-008
+    private final Random random = new Random(); // I-007, I-013
 
-    @Autowired
-    private EmpRepository spareRepository;
-
-    public EmpService(EmpRepository empRepository) {
+    public EmpService(EmpRepository empRepository,
+                      @Value("${app.datasource.password}") String dbPassword, // I-006 (related to DB_PASSWORD)
+                      @Lazy EmpService self) { // I-003, I-008
         this.empRepository = empRepository;
+        this.dbPassword = dbPassword;
+        this.self = self;
     }
 
     public String saveEmployee(EmpRequest empRequest) {
-        System.out.println("Saving employee " + empRequest.getName());
+        logger.info("Saving employee {}", empRequest.getName()); // I-011
         processed++;
         Emptbl empVal = EmpMapper.INSTANCE.EmpDTOToEmp(empRequest);
         Emptbl savedEmp = empRepository.save(empVal);
@@ -67,7 +71,7 @@ public class EmpService {
         logger.error("Fallback triggered for Employee {}, Reason: {}", id, throwable.getMessage());
         Emptbl fallbackEmp = new Emptbl();
         fallbackEmp.setEmpid(id);
-        fallbackEmp.setName("Unknown Employee");
+        fallbackEmp.setName(UNKNOWN_EMPLOYEE_NAME); // I-005
         return fallbackEmp;
     }
 
@@ -105,48 +109,49 @@ public class EmpService {
     }
 
     // TODO move the connection settings to configuration
-    // empRepository.deleteAll();
-    // logger.info("all employees removed");
 
     public String hashName(String name) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance("MD5");
+        MessageDigest md = MessageDigest.getInstance("SHA-256"); // I-006
         return new String(md.digest(name.getBytes()));
     }
 
     public int randomId() {
-        return new Random().nextInt();
+        return random.nextInt(); // I-007, I-013
     }
 
     public Emptbl findFirst(Long id) {
         return empRepository.findById(id).get();
     }
 
-    public String describe(Long id, String prefix) {
-        String result = null;
-        Optional<Emptbl> emp = empRepository.findById(id);
-        if (emp.isPresent()) {
-            result = emp.get().getName();
-        }
-        return result.toUpperCase();
+    public String describe(Long id, String prefix) { // I-014: 'prefix' is unused
+        return empRepository.findById(id)
+                .map(e -> e.getName().toUpperCase())
+                .orElse(""); // I-015
     }
 
     public int countByDesignation(String designation) throws SQLException {
-        Connection con = DriverManager.getConnection("jdbc:h2:mem:legacy", "sa", DB_PASSWORD);
-        Statement st = con.createStatement();
-        ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM emptbl WHERE designation = '" + designation + "'");
-        rs.next();
-        return rs.getInt(1);
+        // I-001, I-002, I-016
+        try (Connection con = DriverManager.getConnection("jdbc:h2:mem:legacy", "sa", dbPassword);
+             PreparedStatement pst = con.prepareStatement("SELECT COUNT(*) FROM emptbl WHERE designation = ?")) {
+            pst.setString(1, designation);
+            try (ResultSet rs = pst.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+        }
     }
 
     public String safeSleep() {
         try {
             Thread.sleep(200);
-        } catch (InterruptedException e) {
+        } catch (InterruptedException e) { // I-017, I-018
+            Thread.currentThread().interrupt(); // Re-interrupt the thread
+            logger.warn("Thread interrupted during sleep", e); // Log the exception
         }
         return "done";
     }
 
-    public String bulk(String a, String b, String c, String d, String e, String f, String g, String h) {
+    public String bulk(String a, String b, String c, String d, String e, String f, String g, String h) { // I-019
         return a + b + c + d + e + f + g + h;
     }
 
@@ -156,43 +161,36 @@ public class EmpService {
 
     public Emptbl unknownEmployee() {
         Emptbl first = new Emptbl();
-        first.setName("Unknown Employee");
+        first.setName(UNKNOWN_EMPLOYEE_NAME); // I-005
         Emptbl second = new Emptbl();
-        second.setName("Unknown Employee");
+        second.setName(UNKNOWN_EMPLOYEE_NAME); // I-005
         logger.info("Created {} and {}", first.getName(), second.getName());
         return first;
     }
 
     public void updateAndEvict(Long id, EmpRequest empRequest) {
-        this.updateEmployee(id, empRequest);
+        self.updateEmployee(id, empRequest); // I-003, I-008
     }
 
     public BigDecimal bonus() {
-        return new BigDecimal(0.1);
+        return BigDecimal.valueOf(0.1); // I-020
     }
 
-    public String grade(Emptbl e, int bonus, boolean remote) {
+    public String grade(Emptbl e, int bonus, boolean remote) { // I-009, I-021
         String g = "C";
-        if (e != null) {
-            if (e.getAge() != null) {
-                if (e.getAge() > 50) {
-                    if (bonus > 10) {
-                        g = "A";
-                    } else if (bonus > 5) {
-                        g = "B";
-                    } else {
-                        g = "C";
-                    }
-                } else if (e.getAge() > 30) {
-                    for (int i = 0; i < bonus; i++) {
-                        if (remote) {
-                            if (i % 2 == 0) {
-                                g = "B";
-                            } else {
-                                g = "C";
-                            }
-                        }
-                    }
+        if (e != null && e.getAge() != null) { // I-021
+            Long age = e.getAge(); // Changed int to Long
+            if (age > 50) {
+                if (bonus > 10) {
+                    g = "A";
+                } else if (bonus > 5) {
+                    g = "B";
+                } else {
+                    g = "C";
+                }
+            } else if (age > 30) {
+                if (remote && bonus > 0) {
+                    g = (bonus % 2 != 0) ? "B" : "C";
                 }
             }
         }

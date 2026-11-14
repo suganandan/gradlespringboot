@@ -16,24 +16,26 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.HtmlUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -49,9 +51,6 @@ public class HelloController {
 
     private final EmpService empService;
 
-    @Autowired
-    private EmpService autoService;
-
     @Value("${legacy.report.dir:/tmp}")
     private String reportDir;
 
@@ -61,7 +60,7 @@ public class HelloController {
 
     @GetMapping("/")
     public ResponseEntity<String> getWelcome() {
-        System.out.println("Welcome endpoint called");
+        LOG.info("Welcome endpoint called");
         return ResponseEntity.status(200).body("Welcome to Gradle Spring Boot");
     }
 
@@ -121,12 +120,12 @@ public class HelloController {
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Employee Not Found");
     }
 
-    @RequestMapping(value = "/legacy/ping", method = RequestMethod.GET)
+    @GetMapping("/legacy/ping")
     public String legacyPing() {
         return "ok";
     }
 
-    @RequestMapping("/legacy/any")
+    @GetMapping("/legacy/any")
     public String legacyAny() {
         return "any";
     }
@@ -136,10 +135,16 @@ public class HelloController {
         if (!DEMO_ENABLED) {
             return ResponseEntity.notFound().build();
         }
-        Connection con = DriverManager.getConnection(DB_URL, "sa", DB_PASSWORD);
-        Statement st = con.createStatement();
-        ResultSet rs = st.executeQuery("SELECT * FROM emptbl WHERE name = '" + name + "'");
-        String found = rs.next() ? rs.getString(1) : null;
+        String found = null;
+        try (Connection con = DriverManager.getConnection(DB_URL, "sa", DB_PASSWORD);
+             PreparedStatement pst = con.prepareStatement("SELECT empid FROM emptbl WHERE name = ?")) {
+            pst.setString(1, name);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    found = rs.getString(1);
+                }
+            }
+        }
         return ResponseEntity.ok(found);
     }
 
@@ -149,7 +154,8 @@ public class HelloController {
             response.setStatus(404);
             return;
         }
-        response.getWriter().write("<h1>Hello " + name + "</h1>");
+        String escapedName = HtmlUtils.htmlEscape(name);
+        response.getWriter().write("<h1>Hello " + escapedName + "</h1>");
     }
 
     @GetMapping("/legacy/download")
@@ -157,7 +163,17 @@ public class HelloController {
         if (!DEMO_ENABLED) {
             return ResponseEntity.notFound().build();
         }
-        File target = new File(reportDir, file);
+        Path baseDir = Paths.get(reportDir).toAbsolutePath().normalize();
+        Path requestedPath = baseDir.resolve(file).toAbsolutePath().normalize();
+
+        if (!requestedPath.startsWith(baseDir)) {
+            LOG.warn("Attempted path traversal: {}", file);
+            return ResponseEntity.badRequest().build();
+        }
+        File target = requestedPath.toFile();
+        if (!target.exists() || !target.isFile()) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(Files.readAllBytes(target.toPath()));
     }
 
@@ -166,7 +182,14 @@ public class HelloController {
         if (!DEMO_ENABLED) {
             return ResponseEntity.notFound().build();
         }
-        Process process = Runtime.getRuntime().exec("ls -l " + dir);
+        // Basic validation for 'dir' to prevent injection.
+        // For a real application, a more robust whitelist or regex validation would be needed.
+        if (dir.contains("..") || dir.contains("/") || dir.contains("\\") || dir.contains(";") || dir.contains("&") || dir.contains("|")) {
+            LOG.warn("Attempted command injection with dir: {}", dir);
+            return ResponseEntity.badRequest().body("Invalid directory name.");
+        }
+        ProcessBuilder pb = new ProcessBuilder("ls", "-l", dir);
+        Process process = pb.start();
         return ResponseEntity.ok("started " + process.pid());
     }
 
@@ -176,7 +199,14 @@ public class HelloController {
             response.setStatus(404);
             return;
         }
-        response.sendRedirect(url);
+        // Only allow relative paths starting with a single '/'
+        if (url.startsWith("/") && !url.startsWith("//")) {
+            response.sendRedirect(url);
+        } else {
+            LOG.warn("Attempted open redirect with URL: {}", url);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("Invalid redirect URL.");
+        }
     }
 
     @GetMapping("/legacy/fetch")
@@ -184,21 +214,47 @@ public class HelloController {
         if (!DEMO_ENABLED) {
             return ResponseEntity.notFound().build();
         }
-        try (var in = new URL(target).openStream()) {
-            return ResponseEntity.ok(new String(in.readAllBytes()));
+        try {
+            URI uri = new URI(target);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+
+            // Allow only http/https schemes
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                LOG.warn("SSRF attempt with invalid scheme: {}", target);
+                return ResponseEntity.badRequest().body("Only HTTP/HTTPS schemes are allowed.");
+            }
+
+            // For a real application, an allow-list of hosts would be checked here.
+            // For this exercise, we'll add a basic check to prevent access to common loopback/local addresses.
+            if (host != null && (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1") || host.equals("0:0:0:0:0:0:0:1"))) {
+                LOG.warn("SSRF attempt to local host: {}", target);
+                return ResponseEntity.badRequest().body("Access to local resources is not allowed.");
+            }
+
+            try (var in = uri.toURL().openStream()) {
+                return ResponseEntity.ok(new String(in.readAllBytes()));
+            }
+        } catch (URISyntaxException e) {
+            LOG.warn("Invalid URL syntax for SSRF check: {}", target, e);
+            return ResponseEntity.badRequest().body("Invalid URL syntax.");
         }
     }
 
     @GetMapping("/legacy/login")
     public String legacyLogin(@RequestParam String user, HttpServletResponse response) {
-        LOG.info("Login attempt by " + user);
+        String sanitizedUser = user.replaceAll("[\r\n]", "_");
+        LOG.info("Login attempt by {}", sanitizedUser);
         Cookie session = new Cookie("SESSION", user);
+        session.setHttpOnly(true);
+        session.setSecure(true);
+        session.setPath("/");
         response.addCookie(session);
         return "welcome";
     }
 
     @GetMapping("/legacy/item/{itemId}")
-    public String legacyItem(@PathVariable Long id) {
+    public String legacyItem(@PathVariable("itemId") Long id) {
         return "item " + id;
     }
 }

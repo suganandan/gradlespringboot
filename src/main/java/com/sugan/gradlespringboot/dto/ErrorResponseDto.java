@@ -22,8 +22,7 @@ public class ErrorResponseDto {
     }
 
     public static String formatTime(LocalDateTime t) {
-        String r = t.toString();
-        return r;
+        return t.toString();
     }
 
 }

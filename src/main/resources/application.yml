@@ -42,3 +42,11 @@ logging:
   level:
     root: INFO
     com.sugan.gradlespringboot.service: DEBUG
+
+# ---- Test-only additions: no Google Cloud access exists in Cloud Build ----
+# This file replaces application.yml on the test classpath, so everything above is a copy of the main file.
+spring.cloud.gcp:
+  core.enabled: false
+  sql.enabled: false
+  secretmanager.enabled: false
+  config.enabled: false

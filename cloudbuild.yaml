@@ -2,6 +2,9 @@ substitutions:
   _FOSSA_PROJECT: 'github.com/suganandan/gradlespringboot'   # must match project.id in .fossa.yml
   _FOSSA_GATE: 'false'                                        # 'true' = the build fails when FOSSA policy is violated
   _COVERAGE_GATE: 'false'                                     # 'true' = the build fails when line coverage is below _COVERAGE_MIN
+  _TEST_GATE: 'false'                                         # 'true' = the build fails when a unit test fails
+  _JUNIT_AGENT: 'true'                                        # 'true' = after the Sonar scan, the agent writes JUnit tests for classes with low coverage
+  _AGENT_DIR: 'SonarFix'                                      # folder in the repo that holds junit_agent.py, sonar_fix_agent.py, model_router.py, ...
   _COVERAGE_MIN: '0.60'                                       # 0.60 = 60% of lines
   _COVERAGE_BUCKET: 'suga-new01-vulnerabilities'              # the coverage report of every build is stored under coverage/<build id>/
 
@@ -11,8 +14,20 @@ steps:
   # Step 1: build and unit tests (writes the JaCoCo report that Sonar reads)
   - id: build-test
     name: 'gradle:8.11-jdk21'
-    entrypoint: 'gradle'
-    args: ['clean', 'build', 'jacocoTestReport']
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -uo pipefail
+        # --continue: a failing test must not stop the build before the JaCoCo report is written.
+        gradle clean build jacocoTestReport --continue
+        RC=$$?
+        if [ $$RC -ne 0 ]; then
+          if [ "${_TEST_GATE}" = "true" ]; then echo "Build or tests failed and the test gate is on"; exit $$RC; fi
+          # Only tests may fail here. If the jar was not built, the build is really broken.
+          ls build/libs/*.jar >/dev/null 2>&1 || { echo "Compile or package error, no jar was built"; exit $$RC; }
+          echo "Some tests failed (test gate is off, the build continues so the coverage report and the JUnit agent can run)"
+        fi
 
   # Step 2: code coverage report. Prints line and branch coverage, packs the HTML report, applies the optional gate.
   # The gate is off by default (like the FOSSA gate): junit_agent.py raises the coverage, so the build must not stop on it yet.
@@ -96,6 +111,32 @@ steps:
           -Dsonar.gradle.skipCompile=true \
           -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml
 
+  # Step 5b: JUnit agent. Runs after the Sonar scan, so Sonar already has the coverage numbers.
+  # It writes missing tests, checks them with Gradle, pushes branch ai-junit/<id> and opens a pull request.
+  # It never stops the build, and it skips builds of its own branches (no endless loop).
+  - id: junit-agent
+    name: 'gradle:8.11-jdk21'
+    entrypoint: 'bash'
+    env:
+      - 'GITHUB_TOKEN=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'
+    args:
+      - '-c'
+      - |
+        set -uo pipefail
+        if [ "${_JUNIT_AGENT}" != "true" ]; then echo "JUnit agent is off (_JUNIT_AGENT)"; exit 0; fi
+        case "${BRANCH_NAME}" in ai-junit/*|ai-sonar-fix/*) echo "Build of an agent branch, agent skipped"; exit 0;; esac
+        if [ ! -f "${_AGENT_DIR}/junit_agent.py" ]; then echo "${_AGENT_DIR}/junit_agent.py is not in the repo, agent skipped. Commit the agent folder."; exit 0; fi
+        (apt-get update -qq && apt-get install -y -qq python3 python3-pip git >/dev/null) || { echo "python install failed, agent skipped"; exit 0; }
+        pip3 install -q --break-system-packages -r "${_AGENT_DIR}/requirements.txt" || { echo "pip install failed, agent skipped"; exit 0; }
+        export PROJECT_ID="${PROJECT_ID}" LOCATION=us-central1 CLAUDE_LOCATION=us-east5
+        export SONAR_BASE_URL=https://sonarcloud.io SONAR_ORG=suganandan SONAR_PROJECT_KEY=gradlespringboot SONAR_TOKEN="9794e17890c1f9c62b3779f873ec81069f3ea38f"
+        export SOURCE_MODE=git SOURCE_REPO_URL="https://x-access-token:$${GITHUB_TOKEN}@github.com/suganandan/gradlespringboot.git"
+        export GITHUB_REPO=suganandan/gradlespringboot BASE_BRANCH=main OPEN_PR=true
+        export GCS_BUCKET="${_COVERAGE_BUCKET}" WORK_DIR=/tmp/sonar-fix GRADLE_USER_HOME=/tmp/gradle-home
+        export MODEL_LIGHT=gemini-2.5-flash MODEL_STANDARD=claude-sonnet-5-5 MODEL_HEAVY=claude-opus-5-5
+        cd "${_AGENT_DIR}"
+        python3 junit_agent.py || echo "JUnit agent ended with an error, see the log above (the build continues)"
+
   # Step 6: build and push the Docker image with Jib (tests already ran in step 1)
   - id: jib
     name: 'gradle:8.11-jdk21'
@@ -128,4 +169,4 @@ artifacts:
       - 'build/reports/jacoco/test/jacocoTestReport.xml'
       - 'build/jacoco-html.tgz'
 
-timeout: 1800s
+timeout: 3600s

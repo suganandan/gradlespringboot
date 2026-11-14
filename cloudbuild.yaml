@@ -8,7 +8,7 @@ substitutions:
   _COVERAGE_MIN: '0.60'                                       # 0.60 = 60% of lines
   _COVERAGE_BUCKET: 'suga-new01-vulnerabilities'              # the coverage report of every build is stored under coverage/<build id>/
 
-# Tokens are hardcoded in the env lines of the steps below (by request).
+# Tokens are hardcoded in the env lines of the steps below (by request)
 
 # Only the GitHub token comes from Secret Manager (secret name: github-token). Create it once:
 #   printf '%s' '<new token>' | gcloud secrets create github-token --data-file=- --project=suga-new01

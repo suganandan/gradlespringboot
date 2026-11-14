@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -27,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,7 +36,10 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @Tag(name = "Employee API", description = "CRUD API for Employees")
@@ -54,8 +57,26 @@ public class HelloController {
     @Value("${legacy.report.dir:/tmp}")
     private String reportDir;
 
+    @Value("${legacy.ssrf.allowed-hosts:}")
+    private String allowedSsrfHostsString;
+
+    private Set<String> allowedSsrfHosts;
+
     public HelloController(EmpService empService) {
         this.empService = empService;
+    }
+
+    @PostConstruct
+    public void init() {
+        if (allowedSsrfHostsString != null && !allowedSsrfHostsString.isBlank()) {
+            allowedSsrfHosts = Set.of(allowedSsrfHostsString.split(","))
+                                  .stream()
+                                  .map(String::trim)
+                                  .filter(s -> !s.isEmpty())
+                                  .collect(Collectors.toUnmodifiableSet());
+        } else {
+            allowedSsrfHosts = Collections.emptySet();
+        }
     }
 
     @GetMapping("/")
@@ -167,7 +188,7 @@ public class HelloController {
         Path requestedPath = baseDir.resolve(file).toAbsolutePath().normalize();
 
         if (!requestedPath.startsWith(baseDir)) {
-            LOG.warn("Attempted path traversal: {}", file);
+            LOG.warn("Attempted path traversal: {}", file.replaceAll("[\r\n]", "_"));
             return ResponseEntity.badRequest().build();
         }
         File target = requestedPath.toFile();
@@ -184,11 +205,11 @@ public class HelloController {
         }
         // Basic validation for 'dir' to prevent injection.
         // For a real application, a more robust whitelist or regex validation would be needed.
-        if (dir.contains("..") || dir.contains("/") || dir.contains("\\") || dir.contains(";") || dir.contains("&") || dir.contains("|")) {
-            LOG.warn("Attempted command injection with dir: {}", dir);
+        if (dir.contains("..") || dir.contains("/") || dir.contains("\\") || dir.contains(";") || dir.contains("&") || dir.contains("|") || dir.startsWith("-")) {
+            LOG.warn("Attempted command injection with dir: {}", dir.replaceAll("[\r\n]", "_"));
             return ResponseEntity.badRequest().body("Invalid directory name.");
         }
-        ProcessBuilder pb = new ProcessBuilder("ls", "-l", dir);
+        ProcessBuilder pb = new ProcessBuilder("/bin/ls", "-l", dir);
         Process process = pb.start();
         return ResponseEntity.ok("started " + process.pid());
     }
@@ -203,7 +224,7 @@ public class HelloController {
         if (url.startsWith("/") && !url.startsWith("//")) {
             response.sendRedirect(url);
         } else {
-            LOG.warn("Attempted open redirect with URL: {}", url);
+            LOG.warn("Attempted open redirect with URL: {}", url.replaceAll("[\r\n]", "_"));
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("Invalid redirect URL.");
         }
@@ -221,22 +242,34 @@ public class HelloController {
 
             // Allow only http/https schemes
             if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
-                LOG.warn("SSRF attempt with invalid scheme: {}", target);
+                LOG.warn("SSRF attempt with invalid scheme: {}", target.replaceAll("[\r\n]", "_"));
                 return ResponseEntity.badRequest().body("Only HTTP/HTTPS schemes are allowed.");
+            }
+
+            // Host presence check
+            if (host == null || host.trim().isEmpty()) {
+                LOG.warn("SSRF attempt with no host in URL: {}", target.replaceAll("[\r\n]", "_"));
+                return ResponseEntity.badRequest().body("URL must specify a host.");
             }
 
             // For a real application, an allow-list of hosts would be checked here.
             // For this exercise, we'll add a basic check to prevent access to common loopback/local addresses.
-            if (host != null && (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1") || host.equals("0:0:0:0:0:0:0:1"))) {
-                LOG.warn("SSRF attempt to local host: {}", target);
+            if (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1") || host.equals("0:0:0:0:0:0:0:1")) {
+                LOG.warn("SSRF attempt to local host: {}", target.replaceAll("[\r\n]", "_"));
                 return ResponseEntity.badRequest().body("Access to local resources is not allowed.");
+            }
+
+            // Whitelist check
+            if (!allowedSsrfHosts.isEmpty() && !allowedSsrfHosts.contains(host)) {
+                LOG.warn("SSRF attempt to non-whitelisted host: {}", target.replaceAll("[\r\n]", "_"));
+                return ResponseEntity.badRequest().body("Access to this host is not allowed.");
             }
 
             try (var in = uri.toURL().openStream()) {
                 return ResponseEntity.ok(new String(in.readAllBytes()));
             }
         } catch (URISyntaxException e) {
-            LOG.warn("Invalid URL syntax for SSRF check: {}", target, e);
+            LOG.warn("Invalid URL syntax for SSRF check: {}", target.replaceAll("[\r\n]", "_"), e);
             return ResponseEntity.badRequest().body("Invalid URL syntax.");
         }
     }

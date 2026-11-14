@@ -24,6 +24,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -159,7 +160,7 @@ public class EmpService {
     }
 
     public boolean sameName(Emptbl x, Emptbl y) {
-        return x.getName() == y.getName();
+        return Objects.equals(x.getName(), y.getName());
     }
 
     public Emptbl unknownEmployee() {

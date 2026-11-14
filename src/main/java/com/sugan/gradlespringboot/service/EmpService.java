@@ -36,15 +36,15 @@ public class EmpService {
 
     private final EmpRepository empRepository;
     private final String dbPassword; // I-006, I-016 (related to DB_PASSWORD)
-    private final EmpService self; // I-003, I-008
+    private final EmpService self; // I-003, I-008, I-010
     private final Random random = new Random(); // I-007, I-013
 
     public EmpService(EmpRepository empRepository,
                       @Value("${app.datasource.password}") String dbPassword, // I-006 (related to DB_PASSWORD)
-                      @Lazy EmpService self) { // I-003, I-008
+                      @Lazy EmpService self) { // I-003, I-008, I-010
         this.empRepository = empRepository;
         this.dbPassword = dbPassword;
-        this.self = self;
+        this.self = self; // I-004, I-011
     }
 
     public String saveEmployee(EmpRequest empRequest) {
@@ -125,8 +125,11 @@ public class EmpService {
 
     public String describe(Long id, String prefix) { // I-014: 'prefix' is unused
         return empRepository.findById(id)
-                .map(e -> e.getName().toUpperCase())
-                .orElse(""); // I-015
+                .map(e -> {
+                    String name = e.getName();
+                    return name != null ? name.toUpperCase() : UNKNOWN_EMPLOYEE_NAME; // I-015
+                })
+                .orElse(UNKNOWN_EMPLOYEE_NAME); // I-015
     }
 
     public int countByDesignation(String designation) throws SQLException {
@@ -168,7 +171,7 @@ public class EmpService {
         return first;
     }
 
-    public void updateAndEvict(Long id, EmpRequest empRequest) {
+    public void updateAndEvict(Long id, EmpRequest empRequest) { // I-020
         self.updateEmployee(id, empRequest); // I-003, I-008
     }
 
@@ -177,23 +180,32 @@ public class EmpService {
     }
 
     public String grade(Emptbl e, int bonus, boolean remote) { // I-009, I-021
-        String g = "C";
-        if (e != null && e.getAge() != null) { // I-021
-            Long age = e.getAge(); // Changed int to Long
-            if (age > 50) {
-                if (bonus > 10) {
-                    g = "A";
-                } else if (bonus > 5) {
-                    g = "B";
-                } else {
-                    g = "C";
-                }
-            } else if (age > 30) {
-                if (remote && bonus > 0) {
-                    g = (bonus % 2 != 0) ? "B" : "C";
-                }
-            }
+        if (e == null || e.getAge() == null) { // I-021
+            return "C"; // Default grade if employee or age is null
         }
-        return g;
+        Long age = e.getAge();
+        if (age > 50) {
+            return calculateGradeForSenior(bonus);
+        } else if (age > 30) {
+            return calculateGradeForMidCareer(bonus, remote);
+        }
+        return "C"; // Default grade for younger employees
+    }
+
+    private String calculateGradeForSenior(int bonus) {
+        if (bonus > 10) {
+            return "A";
+        } else if (bonus > 5) {
+            return "B";
+        } else {
+            return "C";
+        }
+    }
+
+    private String calculateGradeForMidCareer(int bonus, boolean remote) {
+        if (remote && bonus > 0) {
+            return (bonus % 2 != 0) ? "B" : "C";
+        }
+        return "C"; // Default for mid-career if not remote or bonus not positive
     }
 }

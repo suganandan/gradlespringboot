@@ -10,6 +10,14 @@ substitutions:
 
 # Tokens are hardcoded in the env lines of the steps below (by request).
 
+# Only the GitHub token comes from Secret Manager (secret name: github-token). Create it once:
+#   printf '%s' '<new token>' | gcloud secrets create github-token --data-file=- --project=suga-new01
+#   gcloud secrets add-iam-policy-binding github-token --member="serviceAccount:<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com" --role=roles/secretmanager.secretAccessor
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/github-token/versions/latest
+      env: GITHUB_TOKEN
+
 steps:
   # Step 1: build and unit tests (writes the JaCoCo report that Sonar reads)
   - id: build-test
@@ -117,8 +125,7 @@ steps:
   - id: junit-agent
     name: 'gradle:8.11-jdk21'
     entrypoint: 'bash'
-    env:
-      - 'GITHUB_TOKEN=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'
+    secretEnv: ['GITHUB_TOKEN']   # read from Secret Manager: a GitHub token written in a public repo is revoked by GitHub within minutes
     args:
       - '-c'
       - |

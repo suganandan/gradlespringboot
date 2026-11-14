@@ -50,3 +50,8 @@ spring.cloud.gcp:
   sql.enabled: false
   secretmanager.enabled: false
   config.enabled: false
+
+# Read by EmpService (@Value("${app.datasource.password}")). Dummy value for tests.
+app:
+  datasource:
+    password: ${APP_DATASOURCE_PASSWORD:test-password}

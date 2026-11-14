@@ -16,7 +16,7 @@ substitutions:
 availableSecrets:
   secretManager:
     - versionName: projects/$PROJECT_ID/secrets/github-token/versions/latest
-      env: GITHUB_TOKEN
+      env: GITHUB_TOKEN1
 
 steps:
   # Step 1: build and unit tests (writes the JaCoCo report that Sonar reads)
@@ -125,7 +125,7 @@ steps:
   - id: junit-agent
     name: 'gradle:8.11-jdk21'
     entrypoint: 'bash'
-    secretEnv: ['GITHUB_TOKEN']   # read from Secret Manager: a GitHub token written in a public repo is revoked by GitHub within minutes
+    secretEnv: ['GITHUB_TOKEN1']   # read from Secret Manager: a GitHub token written in a public repo is revoked by GitHub within minutes
     args:
       - '-c'
       - |
@@ -137,7 +137,7 @@ steps:
         pip3 install -q --break-system-packages -r "${_AGENT_DIR}/requirements.txt" || { echo "pip install failed, agent skipped"; exit 0; }
         export PROJECT_ID="${PROJECT_ID}" LOCATION=us-central1 CLAUDE_LOCATION=us-east5
         export SONAR_BASE_URL=https://sonarcloud.io SONAR_ORG=suganandan SONAR_PROJECT_KEY=gradlespringboot SONAR_TOKEN="9794e17890c1f9c62b3779f873ec81069f3ea38f"
-        export SOURCE_MODE=git SOURCE_REPO_URL="https://x-access-token:$${GITHUB_TOKEN}@github.com/suganandan/gradlespringboot.git"
+        export SOURCE_MODE=git SOURCE_REPO_URL="https://x-access-token:$${GITHUB_TOKEN1}@github.com/suganandan/gradlespringboot.git"
         export GITHUB_REPO=suganandan/gradlespringboot BASE_BRANCH=main OPEN_PR=true
         export GCS_BUCKET="${_COVERAGE_BUCKET}" WORK_DIR=/tmp/sonar-fix GRADLE_USER_HOME=/tmp/gradle-home
         export MODEL_LIGHT=gemini-2.5-flash MODEL_STANDARD=claude-sonnet-5-5 MODEL_HEAVY=claude-opus-5-5

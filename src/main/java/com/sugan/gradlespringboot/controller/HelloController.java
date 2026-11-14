@@ -51,6 +51,7 @@ public class HelloController {
     private static final boolean DEMO_ENABLED = Boolean.getBoolean("legacy.demo");
     private static final String DB_URL = "jdbc:h2:mem:legacy";
     private static final String DB_PASSWORD = "sa-password-1";
+    private static final String NEWLINE_REGEX = "[\\r\\n]"; // Fix for I-001
 
     private final EmpService empService;
 
@@ -188,7 +189,10 @@ public class HelloController {
         Path requestedPath = baseDir.resolve(file).toAbsolutePath().normalize();
 
         if (!requestedPath.startsWith(baseDir)) {
-            LOG.warn("Attempted path traversal: {}", file.replaceAll("[\r\n]", "_"));
+            // Fix for I-002
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Attempted path traversal: {}", file.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
+            }
             return ResponseEntity.badRequest().build();
         }
         File target = requestedPath.toFile();
@@ -203,10 +207,13 @@ public class HelloController {
         if (!DEMO_ENABLED) {
             return ResponseEntity.notFound().build();
         }
-        // Basic validation for 'dir' to prevent injection.
-        // For a real application, a more robust whitelist or regex validation would be needed.
-        if (dir.contains("..") || dir.contains("/") || dir.contains("\\") || dir.contains(";") || dir.contains("&") || dir.contains("|") || dir.startsWith("-")) {
-            LOG.warn("Attempted command injection with dir: {}", dir.replaceAll("[\r\n]", "_"));
+        // Fix for I-004: Stronger validation for 'dir' to prevent command injection.
+        // Only allow alphanumeric, underscore, hyphen, and dot characters for directory names.
+        if (!dir.matches("^[a-zA-Z0-9_.-]+$")) {
+            // Fix for I-003
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Attempted command injection with invalid dir: {}", dir.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
+            }
             return ResponseEntity.badRequest().body("Invalid directory name.");
         }
         ProcessBuilder pb = new ProcessBuilder("/bin/ls", "-l", dir);
@@ -224,7 +231,10 @@ public class HelloController {
         if (url.startsWith("/") && !url.startsWith("//")) {
             response.sendRedirect(url);
         } else {
-            LOG.warn("Attempted open redirect with URL: {}", url.replaceAll("[\r\n]", "_"));
+            // Fix for I-005
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Attempted open redirect with URL: {}", url.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
+            }
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("Invalid redirect URL.");
         }
@@ -242,26 +252,39 @@ public class HelloController {
 
             // Allow only http/https schemes
             if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
-                LOG.warn("SSRF attempt with invalid scheme: {}", target.replaceAll("[\r\n]", "_"));
+                // Fix for I-006
+                if (LOG.isWarnEnabled()) {
+                    LOG.warn("SSRF attempt with invalid scheme: {}", target.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
+                }
                 return ResponseEntity.badRequest().body("Only HTTP/HTTPS schemes are allowed.");
             }
 
             // Host presence check
             if (host == null || host.trim().isEmpty()) {
-                LOG.warn("SSRF attempt with no host in URL: {}", target.replaceAll("[\r\n]", "_"));
+                // Fix for I-007
+                if (LOG.isWarnEnabled()) {
+                    LOG.warn("SSRF attempt with no host in URL: {}", target.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
+                }
                 return ResponseEntity.badRequest().body("URL must specify a host.");
             }
 
             // For a real application, an allow-list of hosts would be checked here.
             // For this exercise, we'll add a basic check to prevent access to common loopback/local addresses.
             if (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1") || host.equals("0:0:0:0:0:0:0:1")) {
-                LOG.warn("SSRF attempt to local host: {}", target.replaceAll("[\r\n]", "_"));
+                // Fix for I-008
+                if (LOG.isWarnEnabled()) {
+                    LOG.warn("SSRF attempt to local host: {}", target.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
+                }
                 return ResponseEntity.badRequest().body("Access to local resources is not allowed.");
             }
 
-            // Whitelist check
-            if (!allowedSsrfHosts.isEmpty() && !allowedSsrfHosts.contains(host)) {
-                LOG.warn("SSRF attempt to non-whitelisted host: {}", target.replaceAll("[\r\n]", "_"));
+            // Fix for I-010: Whitelist check - if the allow-list is empty, no hosts are allowed.
+            // If the allow-list is not empty, the host must be in it.
+            if (allowedSsrfHosts.isEmpty() || !allowedSsrfHosts.contains(host)) {
+                // Fix for I-009
+                if (LOG.isWarnEnabled()) {
+                    LOG.warn("SSRF attempt to non-whitelisted host: {}", target.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
+                }
                 return ResponseEntity.badRequest().body("Access to this host is not allowed.");
             }
 
@@ -269,14 +292,14 @@ public class HelloController {
                 return ResponseEntity.ok(new String(in.readAllBytes()));
             }
         } catch (URISyntaxException e) {
-            LOG.warn("Invalid URL syntax for SSRF check: {}", target.replaceAll("[\r\n]", "_"), e);
+            LOG.warn("Invalid URL syntax for SSRF check: {}", target.replaceAll(NEWLINE_REGEX, "_"), e); // Fix for I-001
             return ResponseEntity.badRequest().body("Invalid URL syntax.");
         }
     }
 
     @GetMapping("/legacy/login")
     public String legacyLogin(@RequestParam String user, HttpServletResponse response) {
-        String sanitizedUser = user.replaceAll("[\r\n]", "_");
+        String sanitizedUser = user.replaceAll(NEWLINE_REGEX, "_"); // Fix for I-001
         LOG.info("Login attempt by {}", sanitizedUser);
         Cookie session = new Cookie("SESSION", user);
         session.setHttpOnly(true);

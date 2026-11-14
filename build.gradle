@@ -119,10 +119,29 @@ jib {
 ext {
     set('springCloudGcpVersion', "5.8.0")
     set('springCloudVersion', "2024.0.0")
+    set('jackson-databind.version', '2.18.12')
+    set('jackson-core.version', '2.18.11')
+    set('spring-framework.version', '6.2.19')
+    set('micrometer-core.version', '1.15.12')
 }
 dependencyManagement {
     imports {
         mavenBom "com.google.cloud:spring-cloud-gcp-dependencies:${springCloudGcpVersion}"
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+    dependencies {
+        dependency 'org.apache.tomcat.embed:tomcat-embed-core:10.1.59'
+        dependency 'org.apache.tomcat.embed:tomcat-embed-el:10.1.59'
+        dependency 'org.apache.tomcat.embed:tomcat-embed-websocket:10.1.59'
+        dependency 'com.google.guava:guava:33.7.2-android'
+        dependency 'io.grpc:grpc-netty-shaded:1.75.0'
+        dependency 'org.postgresql:postgresql:42.7.12'
+        dependency 'org.springframework.boot:spring-boot:3.5.14'
+        dependency 'org.springframework.boot:spring-boot-devtools:3.5.14'
+        dependency 'org.springframework.boot:spring-boot-starter-actuator:3.5.12'
+        dependency 'org.springframework.boot:spring-boot-autoconfigure:3.5.15'
+        dependency 'org.springframework.data:spring-data-commons:3.5.12'
+        dependency 'org.springframework.security:spring-security-crypto:6.4.4'
+        dependency 'org.apache.commons:commons-lang3:3.18.0'
     }
 }

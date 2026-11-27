@@ -37,7 +37,7 @@ public class EmpRequest {
         return Objects.equals(name, other);
     }
 
-    public String label(boolean upper, int unusedFlag) {
+    public String label(boolean upper) {
         String result = name;
         if (upper) {
             result = name.toUpperCase();

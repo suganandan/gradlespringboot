@@ -38,6 +38,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -247,45 +248,10 @@ public class HelloController {
         }
         try {
             URI uri = new URI(target);
-            String scheme = uri.getScheme();
-            String host = uri.getHost();
 
-            // Allow only http/https schemes
-            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
-                // Fix for I-006
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("SSRF attempt with invalid scheme: {}", target.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
-                }
-                return ResponseEntity.badRequest().body("Only HTTP/HTTPS schemes are allowed.");
-            }
-
-            // Host presence check
-            if (host == null || host.trim().isEmpty()) {
-                // Fix for I-007
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("SSRF attempt with no host in URL: {}", target.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
-                }
-                return ResponseEntity.badRequest().body("URL must specify a host.");
-            }
-
-            // For a real application, an allow-list of hosts would be checked here.
-            // For this exercise, we'll add a basic check to prevent access to common loopback/local addresses.
-            if (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1") || host.equals("0:0:0:0:0:0:0:1")) {
-                // Fix for I-008
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("SSRF attempt to local host: {}", target.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
-                }
-                return ResponseEntity.badRequest().body("Access to local resources is not allowed.");
-            }
-
-            // Fix for I-010: Whitelist check - if the allow-list is empty, no hosts are allowed.
-            // If the allow-list is not empty, the host must be in it.
-            if (allowedSsrfHosts.isEmpty() || !allowedSsrfHosts.contains(host)) {
-                // Fix for I-009
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("SSRF attempt to non-whitelisted host: {}", target.replaceAll(NEWLINE_REGEX, "_")); // Fix for I-001
-                }
-                return ResponseEntity.badRequest().body("Access to this host is not allowed.");
+            Optional<ResponseEntity<String>> validationError = validateSsrfTarget(uri, target);
+            if (validationError.isPresent()) {
+                return validationError.get();
             }
 
             try (var in = uri.toURL().openStream()) {
@@ -295,6 +261,49 @@ public class HelloController {
             LOG.warn("Invalid URL syntax for SSRF check: {}", target.replaceAll(NEWLINE_REGEX, "_"), e); // Fix for I-001
             return ResponseEntity.badRequest().body("Invalid URL syntax.");
         }
+    }
+
+    private void logSsrfAttempt(String message, String target) {
+        if (LOG.isWarnEnabled()) {
+            LOG.warn(message, target.replaceAll(NEWLINE_REGEX, "_"));
+        }
+    }
+
+    private Optional<ResponseEntity<String>> validateSsrfTarget(URI uri, String originalTarget) {
+        String scheme = uri.getScheme();
+        String host = uri.getHost();
+
+        // Allow only http/https schemes
+        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+            // Fix for I-006
+            logSsrfAttempt("SSRF attempt with invalid scheme: {}", originalTarget);
+            return Optional.of(ResponseEntity.badRequest().body("Only HTTP/HTTPS schemes are allowed."));
+        }
+
+        // Host presence check
+        if (host == null || host.trim().isEmpty()) {
+            // Fix for I-007
+            logSsrfAttempt("SSRF attempt with no host in URL: {}", originalTarget);
+            return Optional.of(ResponseEntity.badRequest().body("URL must specify a host."));
+        }
+
+        // For a real application, an allow-list of hosts would be checked here.
+        // For this exercise, we'll add a basic check to prevent access to common loopback/local addresses.
+        if (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1") || host.equals("0:0:0:0:0:0:0:1")) {
+            // Fix for I-008
+            logSsrfAttempt("SSRF attempt to local host: {}", originalTarget);
+            return Optional.of(ResponseEntity.badRequest().body("Access to local resources is not allowed."));
+        }
+
+        // Fix for I-010: Whitelist check - if the allow-list is empty, no hosts are allowed.
+        // If the allow-list is not empty, the host must be in it.
+        if (allowedSsrfHosts.isEmpty() || !allowedSsrfHosts.contains(host)) {
+            // Fix for I-009
+            logSsrfAttempt("SSRF attempt to non-whitelisted host: {}", originalTarget);
+            return Optional.of(ResponseEntity.badRequest().body("Access to this host is not allowed."));
+        }
+
+        return Optional.empty();
     }
 
     @GetMapping("/legacy/login")

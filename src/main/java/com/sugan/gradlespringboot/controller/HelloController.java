@@ -28,6 +28,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,6 +39,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -254,8 +258,29 @@ public class HelloController {
                 return validationError.get();
             }
 
-            try (var in = uri.toURL().openStream()) {
-                return ResponseEntity.ok(new String(in.readAllBytes()));
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(5))
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(uri)
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response;
+            try {
+                response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Request was interrupted", e);
+            }
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return ResponseEntity.ok(response.body());
+            } else {
+                throw new IOException("Server returned HTTP response code: " + response.statusCode() + " for URL: " + uri);
             }
         } catch (URISyntaxException e) {
             LOG.warn("Invalid URL syntax for SSRF check: {}", target.replaceAll(NEWLINE_REGEX, "_"), e); // Fix for I-001

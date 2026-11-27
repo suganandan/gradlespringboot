@@ -49,7 +49,9 @@ public class EmpService {
     }
 
     public String saveEmployee(EmpRequest empRequest) {
-        logger.info("Saving employee {}", empRequest.getName().replaceAll("[\r\n]", "_")); // I-011
+        if (logger.isInfoEnabled()) {
+            logger.info("Saving employee {}", empRequest.getName().replaceAll("[\r\n]", "_")); // I-011
+        }
         processed++;
         Emptbl empVal = EmpMapper.INSTANCE.EmpDTOToEmp(empRequest);
         Emptbl savedEmp = empRepository.save(empVal);
@@ -124,7 +126,7 @@ public class EmpService {
         return empRepository.findById(id).get();
     }
 
-    public String describe(Long id, String prefix) { // I-014: 'prefix' is unused
+    public String describe(Long id) { // I-014: 'prefix' is unused
         return empRepository.findById(id)
                 .map(e -> {
                     String name = e.getName();
@@ -155,8 +157,12 @@ public class EmpService {
         return "done";
     }
 
-    public String bulk(String a, String b, String c, String d, String e, String f, String g, String h) { // I-019
-        return a + b + c + d + e + f + g + h;
+    public String bulk(String... args) { // I-019
+        StringBuilder sb = new StringBuilder();
+        for (String arg : args) {
+            sb.append(arg);
+        }
+        return sb.toString();
     }
 
     public boolean sameName(Emptbl x, Emptbl y) {
@@ -165,15 +171,15 @@ public class EmpService {
 
     public Emptbl unknownEmployee() {
         Emptbl first = new Emptbl();
-        first.setName(UNKNOWN_EMPLOYEE_NAME); // I-005
+        first.setName(UNKNOWN_EMPLOYEE_NAME);
         Emptbl second = new Emptbl();
-        second.setName(UNKNOWN_EMPLOYEE_NAME); // I-005
+        second.setName(UNKNOWN_EMPLOYEE_NAME);
         logger.info("Created {} and {}", first.getName(), second.getName());
         return first;
     }
 
     public void updateAndEvict(Long id, EmpRequest empRequest) { // I-020
-        self.updateEmployee(id, empRequest); // I-003, I-008
+        self.updateEmployee(id, empRequest);
     }
 
     public BigDecimal bonus() {

@@ -269,13 +269,7 @@ public class HelloController {
                     .GET()
                     .build();
 
-            HttpResponse<String> response;
-            try {
-                response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IOException("Request was interrupted", e);
-            }
+            HttpResponse<String> response = sendHttpRequest(client, request);
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return ResponseEntity.ok(response.body());
@@ -285,6 +279,15 @@ public class HelloController {
         } catch (URISyntaxException e) {
             LOG.warn("Invalid URL syntax for SSRF check: {}", target.replaceAll(NEWLINE_REGEX, "_"), e); // Fix for I-001
             return ResponseEntity.badRequest().body("Invalid URL syntax.");
+        }
+    }
+
+    private HttpResponse<String> sendHttpRequest(HttpClient client, HttpRequest request) throws IOException {
+        try {
+            return client.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Request was interrupted", e);
         }
     }
 

@@ -116,27 +116,27 @@ class EmpRequestTest {
     @Test
     @DisplayName("label should return name in uppercase when upper is true")
     void label_shouldReturnUpperCaseName_whenUpperIsTrue() {
-        assertThat(empRequest.label(true, 0)).isEqualTo("JOHN DOE");
+        assertThat(empRequest.label(true)).isEqualTo("JOHN DOE");
     }
 
     @Test
     @DisplayName("label should return name as is when upper is false")
     void label_shouldReturnNameAsIs_whenUpperIsFalse() {
-        assertThat(empRequest.label(false, 0)).isEqualTo("John Doe");
+        assertThat(empRequest.label(false)).isEqualTo("John Doe");
     }
 
     @Test
     @DisplayName("label should throw NullPointerException when name is null and upper is true")
     void label_shouldThrowNPE_whenNameIsNullAndUpperIsTrue() {
         empRequest.setName(null);
-        assertThrows(NullPointerException.class, () -> empRequest.label(true, 0));
+        assertThrows(NullPointerException.class, () -> empRequest.label(true));
     }
 
     @Test
     @DisplayName("label should return null when name is null and upper is false")
     void label_shouldReturnNull_whenNameIsNullAndUpperIsFalse() {
         empRequest.setName(null);
-        assertThat(empRequest.label(false, 0)).isNull();
+        assertThat(empRequest.label(false)).isNull();
     }
 
     @Test
